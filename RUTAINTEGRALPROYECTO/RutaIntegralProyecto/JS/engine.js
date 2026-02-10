@@ -52,7 +52,7 @@ playerImg.src = charImgPaths[selectedCharId] || charImgPaths['estudiante'];
 const camera = {
     x: 0,
     y: 0,
-    
+
     // Seguir al jugador centrado
     follow(player) {
         this.x = player.x * TILE_SIZE * SCALE - canvas.width / 2 + (TILE_SIZE * SCALE) / 2;
@@ -142,7 +142,33 @@ const player = {
 let interactionMessage = '';
 let interactionTimer = 0;
 
+function showDialogue(title, body) {
+    gameState.showingDialogue = true;
+    gameState.dialogueTitle = title;
+    gameState.dialogueBody = body;
+}
+
+function closeDialogue() {
+    gameState.showingDialogue = false;
+    gameState.dialogueTitle = '';
+    gameState.dialogueBody = '';
+}
+
+
+
 function handleInteraction(x, y) {
+
+    // === INTERACCIÓN CON NPC ===
+    if (window.npcs) {
+        for (const npc of window.npcs) {
+            if (npc.x === x && npc.y === y) {
+                handleNpcInteraction(npc);
+                return true; // consume la interacción
+            }
+        }
+    }
+
+
     // Si estamos en interior y pisamos la puerta de salida
     if (gameState.isIndoors) {
         const interior = interiorMaps[gameState.currentInterior];
@@ -205,6 +231,167 @@ function handleInteraction(x, y) {
     interactionTimer = 120;
     return false;
 }
+function handleNpcInteraction(npc) {
+    // ETAPA 0: Primera vez - Manda a la biblioteca
+    if (gameState.caseStage === 0) {
+        showDialogue(
+            'TESTIGO: DON ROBERTO',
+            'Detective… esto no es un robo cualquiera.\n\n' +
+            'Anoche vi a alguien salir apresurado, mirando hacia todos lados.\n' +
+            'No pude verle bien el rostro, pero dejó caer algo.\n\n' +
+            'Si quiere empezar por algún lado… revise la BIBLIOTECA.\n' +
+            'Ahí siempre se esconden cosas que la gente no quiere que se vean.'
+        );
+
+        enableRiddleById(3); // biblioteca
+        gameState.caseStage = 1;
+        return;
+    }
+
+    // ETAPA 1: Esperando que resuelva biblioteca
+    if (gameState.caseStage === 1 && !RIDDLES.find(r => r.id === 3).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Siga la pista, detective.\n\n' +
+            'La BIBLIOTECA es el primer paso.\n' +
+            'Cuando resuelva eso… vuelva conmigo.'
+        );
+        return;
+    }
+    
+    // ETAPA 2: Resolvió biblioteca → va al HOSPITAL
+    if (gameState.caseStage === 1 && RIDDLES.find(r => r.id === 3).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            '¡Excelente trabajo, detective!\n\n' +
+            'Esa pista confirma mis sospechas.\n' +
+            'Ahora vaya al HOSPITAL.\n' +
+            'Allí encontrará algo crucial.'
+        );
+        
+        enableRiddleById(6); // hospital
+        gameState.caseStage = 2;
+        return;
+    }
+
+    // ETAPA 3: Esperando que resuelva hospital
+    if (gameState.caseStage === 2 && !RIDDLES.find(r => r.id === 6).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Vaya al HOSPITAL, detective.\n\n' +
+            'No pierda tiempo.'
+        );
+        return;
+    }
+
+    // ETAPA 4: Resolvió hospital → va a COMISARÍA
+    if (gameState.caseStage === 2 && RIDDLES.find(r => r.id === 6).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Esa pista es muy valiosa.\n\n' +
+            'Ahora necesita revisar los archivos en la COMISARÍA.\n' +
+            'Busque con cuidado.'
+        );
+        
+        enableRiddleById(1); // comisaría
+        gameState.caseStage = 3;
+        return;
+    }
+
+    // ETAPA 5: Esperando que resuelva comisaría
+    if (gameState.caseStage === 3 && !RIDDLES.find(r => r.id === 1).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'La COMISARÍA tiene información vital.\n\n' +
+            'Revise bien.'
+        );
+        return;
+    }
+
+    // ETAPA 6: Resolvió comisaría → va a APARTAMENTOS
+    if (gameState.caseStage === 3 && RIDDLES.find(r => r.id === 1).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Interesante… muy interesante.\n\n' +
+            'Ahora vaya a los APARTAMENTOS.\n' +
+            'Hay algo que debe encontrar ahí.'
+        );
+        
+        enableRiddleById(4); // apartamentos
+        gameState.caseStage = 4;
+        return;
+    }
+
+    // ETAPA 7: Esperando que resuelva apartamentos
+    if (gameState.caseStage === 4 && !RIDDLES.find(r => r.id === 4).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Los APARTAMENTOS guardan secretos.\n\n' +
+            'Encuentre la pista.'
+        );
+        return;
+    }
+
+    // ETAPA 8: Resolvió apartamentos → va al RESTAURANTE
+    if (gameState.caseStage === 4 && RIDDLES.find(r => r.id === 4).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'Excelente trabajo.\n\n' +
+            'Ahora vaya al RESTAURANTE.\n' +
+            'La última pista lo espera ahí.'
+        );
+        
+        enableRiddleById(5); // restaurante
+        gameState.caseStage = 5;
+        return;
+    }
+
+    // ETAPA 9: Esperando que resuelva restaurante
+    if (gameState.caseStage === 5 && !RIDDLES.find(r => r.id === 5).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'El RESTAURANTE es su última parada.\n\n' +
+            'Encuentre la pista final.'
+        );
+        return;
+    }
+
+    // ETAPA 10: Resolvió restaurante → va a ESCENA DEL CRIMEN (final)
+    if (gameState.caseStage === 5 && RIDDLES.find(r => r.id === 5).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            '¡Lo ha logrado, detective!\n\n' +
+            'Ahora tiene todas las pistas.\n' +
+            'Vaya a la ESCENA DEL CRIMEN y resuelva el caso final.'
+        );
+        
+        enableRiddleById(2); // escena del crimen
+        gameState.caseStage = 6;
+        return;
+    }
+
+    // ETAPA 11: Esperando que resuelva escena del crimen
+    if (gameState.caseStage === 6 && !RIDDLES.find(r => r.id === 2).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            'La ESCENA DEL CRIMEN tiene la respuesta final.\n\n' +
+            '¡Termine el caso!'
+        );
+        return;
+    }
+
+    // ETAPA FINAL: Todo resuelto
+    if (gameState.caseStage === 6 && RIDDLES.find(r => r.id === 2).solved) {
+        showDialogue(
+            'DON ROBERTO',
+            '¡FELICIDADES, DETECTIVE!\n\n' +
+            'Ha resuelto el caso.\n' +
+            'El asesino es CARLOS MENDEZ.'
+        );
+        return;
+    }
+}
+
 
 // ============================
 // SISTEMA DE INTERIORES
@@ -334,7 +521,36 @@ window.addEventListener('keydown', (e) => {
     }
 
     e.preventDefault();
+
+    // Interacción con E (hablar / entrar / usar)
+    if (e.key === 'e' || e.key === 'E') {
+        const front = getFrontTile(player.x, player.y, player.direction);
+        handleInteraction(front.x, front.y);
+        e.preventDefault();
+        return;
+    }
+
+    if (gameState.showingDialogue) {
+    if (e.key === 'Enter' || e.key === 'b' || e.key === 'B') {
+        closeDialogue();
+    }
+    e.preventDefault();
+    return;
+}
+sa
+
+
 });
+
+function getFrontTile(px, py, dir) {
+    let x = px, y = py;
+    if (dir === 'up') y--;
+    else if (dir === 'down') y++;
+    else if (dir === 'left') x--;
+    else if (dir === 'right') x++;
+    return { x, y };
+}
+
 
 window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
@@ -411,12 +627,23 @@ function handleInput() {
 
 function checkForRiddle(px, py) {
     for (const riddle of RIDDLES) {
-        if (!riddle.solved && riddle.x === px && riddle.y === py) {
+
+        if (!gameState.enabledRiddleIds.includes(riddle.id)) continue;
+        if (riddle.solved) continue;
+
+        if (
+            gameState.isIndoors &&
+            gameState.currentInterior === riddle.interior &&
+            riddle.x === px &&
+            riddle.y === py
+        ) {
             gameState.activeRiddle = riddle;
             break;
         }
     }
 }
+
+
 
 function selectRiddleOption(optionIndex) {
     if (gameState.activeRiddle === null) return;
@@ -628,7 +855,7 @@ function drawTile(tileId, screenX, screenY) {
         // Sobre / evidencia
         ctx.fillStyle = `rgba(255, 204, 0, ${0.7 + pulse * 0.3})`;
         ctx.fillRect(screenX + tileSize * 0.2, screenY + tileSize * 0.3, tileSize * 0.6, tileSize * 0.4);
-        
+
         // Triángulo del sobre
         ctx.beginPath();
         ctx.moveTo(screenX + tileSize * 0.2, screenY + tileSize * 0.3);
@@ -1848,7 +2075,7 @@ function drawTile(tileId, screenX, screenY) {
         ctx.ellipse(screenX + tileSize / 2, screenY + tileSize * 0.19, 1.5, flameSize * 0.6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-    // ====== TILES DE HOSPITAL ======
+        // ====== TILES DE HOSPITAL ======
     } else if (tileId === T.FLOOR_HOSPITAL) {
         // Piso de linóleo verdoso/grisáceo
         ctx.fillStyle = '#e4e8e0';
@@ -2046,7 +2273,7 @@ function drawTile(tileId, screenX, screenY) {
         ctx.strokeRect(screenX + tileSize * 0.3, screenY + tileSize * 0.15, tileSize * 0.4, tileSize * 0.7);
         ctx.strokeRect(screenX + tileSize * 0.15, screenY + tileSize * 0.3, tileSize * 0.7, tileSize * 0.4);
 
-    // ====== TILES DE CASA SOSPECHOSA ======
+        // ====== TILES DE CASA SOSPECHOSA ======
     } else if (tileId === T.FLOOR_DARK) {
         // Piso oscuro desgastado
         ctx.fillStyle = '#3a3530';
@@ -2304,7 +2531,7 @@ function drawTile(tileId, screenX, screenY) {
         ctx.arc(screenX + tileSize * 0.55, screenY + tileSize * 0.35, 3, 0, Math.PI * 2);
         ctx.fill();
 
-    // ====== TILES DE BIBLIOTECA ======
+        // ====== TILES DE BIBLIOTECA ======
     } else if (tileId === T.FLOOR_CARPET) {
         // Piso alfombrado granate
         ctx.fillStyle = '#7a4040';
@@ -2558,6 +2785,12 @@ function render() {
         drawNPCs();
     }
 
+      // 🔴 SI HAY DIÁLOGO, SOLO DIBUJA ESO
+    if (gameState.showingDialogue) {
+        drawDialogueUI();
+        return;
+    }
+
     // Dibujar etiquetas de edificios (solo en exterior)
     if (!gameState.isIndoors && window.buildingLabels) {
         ctx.font = 'bold 12px "Press Start 2P", monospace';
@@ -2596,6 +2829,11 @@ function render() {
 
     // Dibujar HUD de progreso
     drawProgressHUD();
+
+    drawUI();
+    drawDialogueUI();
+    drawRiddleUI();
+
 
     // Dibujar acertijo si está activo
     if (gameState.activeRiddle !== null) {
@@ -2668,7 +2906,7 @@ function drawNPCs() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             const nameWidth = ctx.measureText(npc.name).width;
             ctx.fillRect(screenX + size / 2 - nameWidth / 2 - 4, screenY + size + 2, nameWidth + 8, 14);
-            
+
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.fillText(npc.name, screenX + size / 2, screenY + size + 12);
@@ -2742,11 +2980,102 @@ function drawPlayer() {
     ctx.fill();
 }
 
+
+
+let _dialogCloseRect = null; // guarda el área de la X para click/tap
+
+function drawDialogueUI() {
+    if (!gameState.showingDialogue) return; // Solo mostrar si hay diálogo activo
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    // Fondo oscuro
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Panel
+    const w = 600;
+    const h = 300;
+    const x = (cw - w) / 2;
+    const y = (ch - h) / 2;
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#00e6ff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Título
+    ctx.font = '14px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffcc00';
+    ctx.textAlign = 'center';
+    ctx.fillText(gameState.dialogueTitle, cw / 2, y + 40);
+
+    // Texto
+    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    wrapText(ctx, gameState.dialogueBody, x + 30, y + 80, w - 60, 18);
+
+    // Pie
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'center';
+    ctx.fillText('Presiona ENTER o B para cerrar', cw / 2, y + h - 20);
+}
+
+
+
+function isInside(px, py, rx, ry, rw, rh) {
+    return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+}
+
+function onCanvasPointer(e) {
+    if (!gameState.showingDialogue) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // mismas medidas que en drawDialogueUI()
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const panelW = Math.min(720, cw - 30);
+    const panelH = Math.min(420, ch - 40);
+    const panelX = (cw - panelW) / 2;
+    const panelY = (ch - panelH) / 2;
+
+    // área de la X (esquina superior derecha del panel)
+    const xSize = 32;
+    const xPad = 14;
+    const xRectX = panelX + panelW - xSize - xPad;
+    const xRectY = panelY + xPad;
+
+    if (isInside(px, py, xRectX, xRectY, xSize, xSize)) {
+        closeDialogue();
+    }
+
+    e.preventDefault();
+}
+
+canvas.addEventListener('click', onCanvasPointer);
+canvas.addEventListener('touchstart', (e) => onCanvasPointer(e.touches[0]), { passive: false });
+
+
+
+
 function drawUI() {
     // Mini-mapa (solo en exterior)
     if (!gameState.isIndoors) {
         drawMinimap();
     }
+
+    // === Panel de diálogo (si está abierto) ===
+    if (gameState.showingDialogue) {
+        drawDialogueUI();
+        return; // IMPORTANTE: no dibujar el mensaje pequeño debajo
+    }
+
 
     // Mensaje de interacción
     if (interactionTimer > 0) {
@@ -3114,7 +3443,7 @@ function drawProgressHUD() {
     // Barra de progreso
     ctx.fillStyle = '#333';
     ctx.fillRect(hudX + 4, hudY + 18, barW - 8, barH);
-    
+
     const fillW = ((barW - 8) * gameState.riddlesSolved) / gameState.totalRiddles;
     ctx.fillStyle = gameState.riddlesSolved >= gameState.totalRiddles ? '#00ff88' : '#00e6ff';
     ctx.fillRect(hudX + 4, hudY + 18, fillW, barH);
@@ -3163,7 +3492,7 @@ function gameLoop() {
     handleInput();
     player.update();
     camera.follow(player);
-    
+
     render();
     requestAnimationFrame(gameLoop);
 }
@@ -3189,6 +3518,7 @@ function hideLoadingScreen() {
     }
 }
 
+
 // ============================
 // INICIALIZACIÓN
 // ============================
@@ -3204,7 +3534,7 @@ window.addEventListener('load', () => {
     generateHospitalInterior();
     generateCasaInterior();
     generateBibliotecaInterior();
-    placeRiddleMarkers();
+    //placeRiddleMarkers();
     console.log('Mapa generado:', MAP_WIDTH, 'x', MAP_HEIGHT);
     updateLoading(70, 'Preparando acertijos...');
 
@@ -3217,3 +3547,36 @@ window.addEventListener('load', () => {
         }, 400);
     }, 500);
 });
+
+// ============================
+// CERRAR DIÁLOGO CON CLICK / TAP EN LA X
+// ============================
+
+let dialogCloseRect = null;
+
+function isInsideRect(px, py, r) {
+    return r && px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+}
+
+function handleDialoguePointer(clientX, clientY) {
+    if (!gameState.showingDialogue) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const px = (clientX - rect.left) * (canvas.width / rect.width);
+    const py = (clientY - rect.top) * (canvas.height / rect.height);
+
+    if (isInsideRect(px, py, _dialogCloseRect)) {
+        closeDialogue();
+    }
+}
+
+canvas.addEventListener('click', (e) => {
+    handleDialoguePointer(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        handleDialoguePointer(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+    }
+}, { passive: false });

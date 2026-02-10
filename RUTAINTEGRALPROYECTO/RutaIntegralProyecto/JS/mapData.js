@@ -347,6 +347,20 @@ function generateCityMap() {
     placeIfEmpty(26, 9, T.TRASH);
 }
 
+// === Marcar NPCs como INTERACTIVE (después de generar el mapa) ===
+if (window.npcs) {
+    for (const npc of window.npcs) {
+        if (
+            npc.y >= 0 && npc.y < MAP_HEIGHT &&
+            npc.x >= 0 && npc.x < MAP_WIDTH
+        ) {
+            mapCollision[npc.y][npc.x] = COLLISION_TYPES.SOLID;
+
+        }
+    }
+}
+
+
 // Helper: Colocar edificio
 function placeBuilding(startX, startY, width, height, label) {
     for (let y = startY; y < startY + height && y < MAP_HEIGHT; y++) {
@@ -460,84 +474,32 @@ const NPC_TYPES = {
 };
 
 const npcs = [
-    // TESTIGOS
     {
-        id: 'witness1',
-        name: 'María González',
-        type: NPC_TYPES.WITNESS,
-        x: 5, y: 13, // Cerca de la comisaría
-        sprite: 'female',
-        color: '#4a9eff', // Azul para testigos
-        dialogues: [
-            { 
-                text: '¡Detective! Vi algo extraño anoche cerca de la tienda...',
-                options: [
-                    { text: '¿Qué viste exactamente?', response: 'Vi a alguien con una chaqueta roja huyendo. Llevaba algo en las manos, pero estaba muy oscuro.' },
-                    { text: '¿A qué hora fue?', response: 'Eran aproximadamente las 11:30 PM. Estaba sacando la basura cuando lo vi.' }
-                ]
-            }
-        ],
-        clue: 'El sospechoso usaba chaqueta roja y huyó cerca de las 11:30 PM'
-    },
-    {
-        id: 'witness2', 
-        name: 'Don Roberto',
-        type: NPC_TYPES.WITNESS,
-        x: 25, y: 26, // Cerca del parque
+        id: 'npc1',
+        name: 'Don Roberto',            // o el nombre que quieras
+        type: NPC_TYPES.WITNESS,        // da igual, por ahora
+        x: 3, y: 24,                    // cerca de APARTAMENTOS (podés ajustar)
         sprite: 'male',
         color: '#4a9eff',
         dialogues: [
             {
-                text: 'Buenos días, detective. He estado esperándolo.',
+                text: 'Detective… tengo información, pero primero asegúrate de estar listo.',
                 options: [
-                    { text: '¿Tiene información sobre el caso?', response: 'Sí, ayer vi a alguien discutiendo fuertemente cerca del restaurante. Uno gritaba sobre "números" y "cálculos".' },
-                    { text: '¿Reconoció a alguno?', response: 'Uno parecía ser el contador del pueblo, pero el otro... no lo había visto antes.' }
+                    { text: 'Estoy listo.', response: 'Bien. Vuelve conmigo y te diré dónde buscar la siguiente pista.' },
+                    { text: '¿Qué sabes?', response: 'Solo hablaré cuando sea el momento. Regresa cuando necesites otra pista.' }
                 ]
             }
         ],
-        clue: 'Hubo una discusión sobre "números" y "cálculos" cerca del restaurante'
-    },
-    
-    // SOSPECHOSOS
-    {
-        id: 'suspect1',
-        name: 'Carlos Mendez',
-        type: NPC_TYPES.SUSPECT,
-        x: 20, y: 16, // Cerca del restaurante
-        sprite: 'male',
-        color: '#ff4444', // Rojo para sospechosos
-        dialogues: [
-            {
-                text: '¿Detective? No sé por qué me interroga...',
-                options: [
-                    { text: '¿Dónde estuvo anoche a las 11:30?', response: 'Estaba... eh... trabajando en mi oficina. Tengo muchos cálculos pendientes.' },
-                    { text: '¿Conoce a la víctima?', response: 'Claro que sí, teníamos... diferencias sobre algunos números. Pero jamás haría algo así.' }
-                ]
-            }
-        ],
-        clue: 'Admite tener "diferencias sobre números" con la víctima. Su coartada es débil.',
-        suspicion: 75
-    },
-    {
-        id: 'suspect2',
-        name: 'Ana López', 
-        type: NPC_TYPES.SUSPECT,
-        x: 35, y: 5, // Cerca de la biblioteca
-        sprite: 'female',
-        color: '#ff4444',
-        dialogues: [
-            {
-                text: 'No tengo tiempo para esto, detective.',
-                options: [
-                    { text: '¿Por qué tiene tanta prisa?', response: 'Tengo que... resolver algunos problemas matemáticos urgentes. Es muy importante.' },
-                    { text: '¿Dónde consiguió esa chaqueta roja?', response: '¿Qué chaqueta? ¡No sé de qué habla!' }
-                ]
-            }
-        ],
-        clue: 'Nerviosa cuando se menciona la chaqueta roja. Habla de "problemas matemáticos urgentes".',
-        suspicion: 60
+        clue: 'NPC ÚNICO: entrega ubicaciones de pistas (sistema nuevo).'
     }
 ];
+
+// Exponer NPCs al engine.js
+window.npcs = npcs;
+
+
+
+
 
 // ============================
 // ACERTIJOS / RIDDLES - Pistas de la víctima
@@ -549,7 +511,8 @@ const npcs = [
 const RIDDLES = [
     {
         id: 1,
-        x: 5, y: 7,        // Frente a la COMISARÍA
+        interior: 'comisaria',
+        x: 4, y: 3,
         location: 'COMISARÍA',
         question: '¿Cuál es la derivada de f(x) = 3x² + 2x?',
         options: [
@@ -563,7 +526,8 @@ const RIDDLES = [
     },
     {
         id: 2,
-        x: 21, y: 7,       // Frente a la TIENDA
+        interior: 'crimeScene',
+        x: 4, y: 3,
         location: 'ESCENA DEL CRIMEN',
         question: '¿Cuál es el valor de la integral ∫ 2x dx?',
         options: [
@@ -577,7 +541,8 @@ const RIDDLES = [
     },
     {
         id: 3,
-        x: 36, y: 7,       // Frente a la BIBLIOTECA
+        interior: 'biblioteca',   // 👈 IMPORTANTE (id del interiorMaps)
+        x: 6, y: 4,               // 👈 coordenadas DENTRO del mapa interior (ajustables)
         location: 'BIBLIOTECA',
         question: '¿Cuál es el límite de (x² - 1)/(x - 1) cuando x → 1?',
         options: [
@@ -591,7 +556,8 @@ const RIDDLES = [
     },
     {
         id: 4,
-        x: 5, y: 19,       // Frente a los APARTAMENTOS
+        interior: 'apartamentos',
+        x: 4, y: 3,
         location: 'APARTAMENTOS',
         question: '¿Cuál es la derivada de f(x) = sen(x)?',
         options: [
@@ -605,7 +571,8 @@ const RIDDLES = [
     },
     {
         id: 5,
-        x: 21, y: 19,      // Frente al RESTAURANTE
+        interior: 'restaurante',
+        x: 4, y: 3,
         location: 'RESTAURANTE',
         question: '¿Cuál es el valor de ∫₀² 3x² dx?',
         options: [
@@ -619,7 +586,8 @@ const RIDDLES = [
     },
     {
         id: 6,
-        x: 36, y: 19,      // Frente al HOSPITAL
+        interior: 'hospital',
+        x: 4, y: 3,
         location: 'HOSPITAL',
         question: '¿Cuál es la segunda derivada de f(x) = x³ + 2x?',
         options: [
@@ -633,6 +601,7 @@ const RIDDLES = [
     }
 ];
 
+
 // Tile especial para marcador de evidencia/pista
 T.EVIDENCE = 9999;
 
@@ -640,7 +609,10 @@ T.EVIDENCE = 9999;
 function placeRiddleMarkers() {
     for (const riddle of RIDDLES) {
         if (!riddle.solved) {
-            // Asegurar que la posición sea caminable y colocar marcador
+
+            // ✅ NUEVO: si la pista es de interior, NO la pongas afuera
+            if (riddle.interior) continue;
+
             mapFloor[riddle.y][riddle.x] = T.SIDEWALK;
             mapObjects[riddle.y][riddle.x] = T.EVIDENCE;
             mapCollision[riddle.y][riddle.x] = COLLISION_TYPES.WALKABLE;
@@ -648,8 +620,37 @@ function placeRiddleMarkers() {
     }
 }
 
+function enableRiddleById(id) {
+    const r = RIDDLES.find(rr => rr.id === id);
+    if (!r || r.solved) return;
+
+    // Si es interior, poner evidencia en el interiorMaps
+    if (r.interior && interiorMaps[r.interior]) {
+        const im = interiorMaps[r.interior];
+
+        // colocar evidencia dentro del interior
+        if (r.y >= 0 && r.y < im.height && r.x >= 0 && r.x < im.width) {
+            im.objects[r.y][r.x] = T.EVIDENCE;
+            im.collision[r.y][r.x] = COLLISION_TYPES.WALKABLE;
+        }
+
+        // Si el jugador YA está dentro de ese interior, reflejarlo en el mapa actual
+        if (gameState.isIndoors && gameState.currentInterior === r.interior) {
+            mapObjects[r.y][r.x] = T.EVIDENCE;
+            mapCollision[r.y][r.x] = COLLISION_TYPES.WALKABLE;
+        }
+    }
+    
+    // 👇 AGREGAR ESTA LÍNEA
+    gameState.enabledRiddleIds.push(id);
+}
+
+window.enableRiddleById = enableRiddleById;
+
+
 // Estado del juego
 const gameState = {
+
     riddlesSolved: 0,
     totalRiddles: 6,
     activeRiddle: null,       // Riddle actualmente mostrado (null = ninguno)
@@ -657,14 +658,34 @@ const gameState = {
     resultCorrect: false,
     gameComplete: false,      // Juego terminado (todos los acertijos resueltos + final)
     showingFinale: false,     // Mostrando pantalla final
+
+    // NPC / Diálogo
+    caseStage: 0,
+    showingDialogue: false,
+    dialogueTitle: '',
+    dialogueBody: '',
+    _dialogCloseBtn: null,
     cluesFound: [],           // Textos de pistas encontradas
     timer: 0,                 // Tiempo de juego en frames
     maxTime: 30 * 60 * 60,   // 30 minutos a 60fps
+
+    enabledRiddleIds: [], // al iniciar: VACÍO => no hay pistas en el mapa
+
+    caseStage: 0, // 0 = inicio, 1 = biblioteca, 2 = siguiente...
+
+
     // Interior
     isIndoors: false,         // ¿Está dentro de un edificio?
     currentInterior: null,    // ID del interior actual
     outdoorPos: null,         // Posición al salir
+
+    showingDialogue: false,
+    dialogueTitle: '',
+    dialogueBody: '',
+
 };
+
+
 
 // ============================
 // SISTEMA DE INTERIORES
@@ -997,26 +1018,17 @@ function generateApartamentosInterior() {
         objects[8][x] = T.WALL_DIV;
         collision[8][x] = COLLISION_TYPES.SOLID;
     }
-
-    // Puertas de apartamentos en el pasillo
+// Puertas de apartamentos en el pasillo (ahora son WALKABLE para poder entrar)
     objects[5][4] = T.DOOR_APT;  // APT 1
-    collision[5][4] = COLLISION_TYPES.SOLID;
+    collision[5][4] = COLLISION_TYPES.WALKABLE;  // ← CAMBIO AQUÍ
     objects[5][11] = T.DOOR_APT; // APT 2
-    collision[5][11] = COLLISION_TYPES.SOLID;
+    collision[5][11] = COLLISION_TYPES.WALKABLE; // ← CAMBIO AQUÍ
     objects[8][4] = T.DOOR_APT;  // APT 3
-    collision[8][4] = COLLISION_TYPES.SOLID;
+    collision[8][4] = COLLISION_TYPES.WALKABLE;  // ← CAMBIO AQUÍ
     objects[8][11] = T.DOOR_APT; // APT 4
-    collision[8][11] = COLLISION_TYPES.SOLID;
+    collision[8][11] = COLLISION_TYPES.WALKABLE; // ← CAMBIO AQUÍ
 
-    // === PARED DIVISORIA VERTICAL (columna 8, separa apts izq/der) ===
-    for (let y = 1; y <= 4; y++) {
-        objects[y][8] = T.WALL_DIV;
-        collision[y][8] = COLLISION_TYPES.SOLID;
-    }
-    for (let y = 9; y <= 12; y++) {
-        objects[y][8] = T.WALL_DIV;
-        collision[y][8] = COLLISION_TYPES.SOLID;
-    }
+    
 
     // === ESCALERAS (centro del pasillo) ===
     objects[6][7] = T.STAIRS;
@@ -1615,9 +1627,7 @@ function generateHospitalInterior() {
     objects[8][13] = T.BENCH_INT;
     collision[8][13] = COLLISION_TYPES.SOLID;
 
-    // Planta en sala de espera
-    objects[8][5] = T.PLANT_INT;
-    collision[8][5] = COLLISION_TYPES.SOLID;
+  
 
     // Gabinete de emergencia
     objects[7][14] = T.MEDICINE_CABINET;
@@ -1839,27 +1849,14 @@ function generateBibliotecaInterior() {
     collision[2][12] = COLLISION_TYPES.SOLID;
     objects[3][12] = T.BOOKSHELF_TALL;
     collision[3][12] = COLLISION_TYPES.SOLID;
-    objects[4][12] = T.BOOKSHELF_TALL;
-    collision[4][12] = COLLISION_TYPES.SOLID;
-    objects[5][12] = T.BOOKSHELF_TALL;
-    collision[5][12] = COLLISION_TYPES.SOLID;
+    
 
-    // === ESTANTES CENTRALES (dos filas de estantes) ===
-    // Fila izquierda de estantes
-    objects[2][4] = T.BOOKSHELF;
-    collision[2][4] = COLLISION_TYPES.SOLID;
     objects[3][4] = T.BOOKSHELF;
     collision[3][4] = COLLISION_TYPES.SOLID;
-    objects[4][4] = T.BOOKSHELF;
-    collision[4][4] = COLLISION_TYPES.SOLID;
 
-    // Fila derecha de estantes
-    objects[2][9] = T.BOOKSHELF;
-    collision[2][9] = COLLISION_TYPES.SOLID;
+    // Estante derecho (solo uno)
     objects[3][9] = T.BOOKSHELF;
     collision[3][9] = COLLISION_TYPES.SOLID;
-    objects[4][9] = T.BOOKSHELF;
-    collision[4][9] = COLLISION_TYPES.SOLID;
 
     // === ZONA DE LECTURA (parte inferior) ===
     // Mesa de lectura 1 (izquierda)
