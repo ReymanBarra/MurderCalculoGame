@@ -478,7 +478,7 @@ const npcs = [
         id: 'npc1',
         name: 'Don Roberto',            // o el nombre que quieras
         type: NPC_TYPES.WITNESS,        // da igual, por ahora
-        x: 3, y: 24,                    // cerca de APARTAMENTOS (podés ajustar)
+       x: 10, y: 10,          // cerca de APARTAMENTOS (podés ajustar)
         sprite: 'male',
         color: '#4a9eff',
         dialogues: [
