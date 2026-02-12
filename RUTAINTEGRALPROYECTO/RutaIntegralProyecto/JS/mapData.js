@@ -670,6 +670,16 @@ const gameState = {
     timer: 0,                 // Tiempo de juego en frames
     maxTime: 30 * 60 * 60,   // 30 minutos a 60fps
 
+    // Acusación final
+    showingAccusation: false,
+    accusationResult: null,   // null = no respondió, true = correcto, false = incorrecto
+    accusationSpot: null,     // {x, y} posición del marcador de acusación
+
+    // Animación de victoria
+    showingVictory: false,
+    victoryStartTime: 0,
+    victoryParticles: [],
+
     enabledRiddleIds: [], // al iniciar: VACÍO => no hay pistas en el mapa
 
     caseStage: 0, // 0 = inicio, 1 = biblioteca, 2 = siguiente...

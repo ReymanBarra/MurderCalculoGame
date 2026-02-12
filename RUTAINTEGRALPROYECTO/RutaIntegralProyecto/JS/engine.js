@@ -193,6 +193,10 @@ function handleInteraction(x, y) {
                             return false;
                         }
                         enterInterior('crimeScene');
+                        // Colocar marcador de acusación en la silueta de tiza
+                        setTimeout(() => {
+                            placeAccusationSpot();
+                        }, 300);
                         return true; // Consumido: teleport
                     }
                     // Entrar a la comisaría
@@ -385,13 +389,26 @@ function handleNpcInteraction(npc) {
         return;
     }
 
-    // ETAPA FINAL: Todo resuelto
+    // ETAPA FINAL: Todo resuelto → ir a la ESCENA DEL CRIMEN
     if (gameState.caseStage === 6 && RIDDLES.find(r => r.id === 2).solved) {
+        gameState.caseStage = 7;
         showDialogue(
             'DON ROBERTO',
-            '¡FELICIDADES, DETECTIVE!\n\n' +
-            'Ha resuelto el caso.\n' +
-            'El asesino es CARLOS MENDEZ.'
+            '¡Increíble, detective! Tiene TODAS las pistas.\n\n' +
+            'Ahora vaya a la ESCENA DEL CRIMEN.\n' +
+            'Ahí podrá reconstruir lo que pasó y atrapar al asesino.\n\n' +
+            '¡La entrada ya está desbloqueada!'
+        );
+        return;
+    }
+
+    // ETAPA 7: Recordar ir a la escena del crimen
+    if (gameState.caseStage === 7) {
+        showDialogue(
+            'DON ROBERTO',
+            'Detective, ya tiene todas las pistas.\n\n' +
+            'Vaya a la ESCENA DEL CRIMEN para resolver el caso.\n' +
+            '¡La entrada está desbloqueada!'
         );
         return;
     }
@@ -492,6 +509,31 @@ const keys = {};
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
     // Manejar input de acertijos
+    // Animación de victoria
+    if (gameState.showingVictory) {
+        const victoryElapsed = (Date.now() - gameState.victoryStartTime) / 1000;
+        if (victoryElapsed > 7 && (e.key === 'Enter' || e.key === ' ')) {
+            window.location.href = '../index.html';
+        }
+        e.preventDefault();
+        return;
+    }
+    // Acusación final
+    if (gameState.showingAccusation) {
+        if (gameState.accusationResult === false) {
+            // Resultado incorrecto: ENTER para reintentar
+            if (e.key === 'Enter' || e.key === ' ') {
+                closeAccusationResult();
+            }
+        } else if (gameState.accusationResult === null) {
+            // Seleccionar sospechoso
+            if (e.key === '1' || e.key === 'a' || e.key === 'A') selectAccusationOption(0);
+            else if (e.key === '2' || e.key === 'b' || e.key === 'B') selectAccusationOption(1);
+            else if (e.key === '3' || e.key === 'c' || e.key === 'C') selectAccusationOption(2);
+        }
+        e.preventDefault();
+        return;
+    }
     if (gameState.showingFinale || gameState.gameComplete) {
         if (e.key === 'Enter' || e.key === ' ') {
             if (gameState.showingFinale) {
@@ -599,6 +641,37 @@ window.addEventListener('keyup', (e) => {
 
 // Click/tap para seleccionar opciones del acertijo
 canvas.addEventListener('click', (e) => {
+    if (gameState.showingVictory) {
+        const victoryElapsed = (Date.now() - gameState.victoryStartTime) / 1000;
+        if (victoryElapsed > 7) {
+            window.location.href = '../index.html';
+        }
+        return;
+    }
+    if (gameState.showingAccusation) {
+        if (gameState.accusationResult === false) {
+            closeAccusationResult();
+            return;
+        }
+        // Click en opciones de acusación
+        const rect2 = canvas.getBoundingClientRect();
+        const cx2 = e.clientX - rect2.left;
+        const cy2 = e.clientY - rect2.top;
+        const cw2 = canvas.width;
+        const ch2 = canvas.height;
+        const pw2 = Math.min(620, cw2 - 40);
+        const px2 = (cw2 - pw2) / 2;
+        const optStart2 = ch2 / 2 - 10 - 420 / 2 + 225;
+        const optH2 = 48;
+        for (let i = 0; i < 3; i++) {
+            const oy2 = optStart2 + i * optH2;
+            if (cx2 >= px2 + 20 && cx2 <= px2 + pw2 - 20 && cy2 >= oy2 && cy2 <= oy2 + optH2 - 5) {
+                selectAccusationOption(i);
+                break;
+            }
+        }
+        return;
+    }
     if (gameState.showingFinale) {
         gameState.showingFinale = false;
         gameState.gameComplete = true;
@@ -641,7 +714,7 @@ const MOVE_DELAY = 8; // Frames entre movimientos
 
 function handleInput() {
     // Bloquear movimiento si hay un acertijo o pantalla activa
-    if (gameState.activeRiddle !== null || gameState.showingResult || gameState.showingFinale || gameState.gameComplete) return;
+    if (gameState.activeRiddle !== null || gameState.showingResult || gameState.showingFinale || gameState.gameComplete || gameState.showingAccusation || gameState.showingVictory) return;
 
     if (moveTimer > 0) {
         moveTimer--;
@@ -664,6 +737,9 @@ function handleInput() {
 
     // Chequear si el jugador pisó un marcador de evidencia
     checkForRiddle(player.targetX, player.targetY);
+
+    // Chequear si el jugador pisó el marcador de acusación
+    checkForAccusation(player.targetX, player.targetY);
 }
 
 function checkForRiddle(px, py) {
@@ -685,6 +761,361 @@ function checkForRiddle(px, py) {
 }
 
 
+
+// ============================
+// SISTEMA DE ACUSACIÓN FINAL
+// ============================
+function placeAccusationSpot() {
+    // Colocar en la zona de sangre/silueta (centro de la escena del crimen)
+    const spotX = 5;
+    const spotY = 3;
+    gameState.accusationSpot = { x: spotX, y: spotY };
+    // Poner un marcador Evidence pulsante en esa posición
+    mapObjects[spotY][spotX] = T.EVIDENCE;
+    mapCollision[spotY][spotX] = COLLISION_TYPES.WALKABLE;
+}
+
+function checkForAccusation(px, py) {
+    if (!gameState.accusationSpot) return;
+    if (gameState.showingAccusation || gameState.showingFinale || gameState.gameComplete) return;
+    if (!gameState.isIndoors || gameState.currentInterior !== 'crimeScene') return;
+    if (px === gameState.accusationSpot.x && py === gameState.accusationSpot.y) {
+        gameState.showingAccusation = true;
+        gameState.accusationResult = null;
+        // Quitar el marcador del mapa
+        mapObjects[py][px] = T.EMPTY;
+    }
+}
+
+function selectAccusationOption(optionIndex) {
+    if (!gameState.showingAccusation) return;
+    if (gameState.accusationResult !== null) return;
+    // Carlos Méndez es la opción correcta (índice 0, opción A)
+    if (optionIndex === 0) {
+        gameState.accusationResult = true;
+        // Breve pausa para mostrar "CORRECTO" y luego animación de victoria
+        setTimeout(() => {
+            gameState.showingAccusation = false;
+            startVictoryAnimation();
+        }, 1200);
+    } else {
+        gameState.accusationResult = false;
+    }
+}
+
+function closeAccusationResult() {
+    if (gameState.accusationResult === true) {
+        // Ya se maneja en selectAccusationOption con setTimeout
+        return;
+    } else {
+        // Incorrecto: volver a mostrar la acusación
+        gameState.accusationResult = null;
+    }
+}
+
+// ============================
+// ANIMACIÓN DE VICTORIA
+// ============================
+function startVictoryAnimation() {
+    gameState.showingVictory = true;
+    gameState.victoryStartTime = Date.now();
+    gameState.victoryParticles = [];
+
+    // Crear partículas de confeti
+    for (let i = 0; i < 80; i++) {
+        gameState.victoryParticles.push({
+            x: Math.random() * canvas.width,
+            y: -Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 4,
+            vy: Math.random() * 3 + 1.5,
+            size: Math.random() * 8 + 3,
+            color: ['#ffcc00', '#ff4444', '#00e6ff', '#00ff88', '#ff66cc', '#ff8800', '#aa44ff'][Math.floor(Math.random() * 7)],
+            rotation: Math.random() * 360,
+            rotSpeed: (Math.random() - 0.5) * 10
+        });
+    }
+}
+
+function drawVictoryAnimation() {
+    if (!gameState.showingVictory) return;
+
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const elapsed = (Date.now() - gameState.victoryStartTime) / 1000;
+
+    // Fondo oscuro con fade in
+    const bgAlpha = Math.min(elapsed * 2, 0.95);
+    ctx.fillStyle = `rgba(10, 10, 30, ${bgAlpha})`;
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Actualizar y dibujar partículas de confeti
+    for (const p of gameState.victoryParticles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotSpeed;
+        if (p.y > ch + 20) {
+            p.y = -10;
+            p.x = Math.random() * cw;
+        }
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
+    }
+
+    // FASE 1 (0-1.5s): Flash dorado
+    if (elapsed < 1.5) {
+        const flashAlpha = Math.max(0, 1 - elapsed / 1.5) * 0.3;
+        ctx.fillStyle = `rgba(255, 204, 0, ${flashAlpha})`;
+        ctx.fillRect(0, 0, cw, ch);
+    }
+
+    // FASE 2 (0.5s+): Título "¡CASO RESUELTO!"
+    if (elapsed > 0.5) {
+        const titleAlpha = Math.min((elapsed - 0.5) * 2, 1);
+        const titleScale = 1 + Math.max(0, 1 - (elapsed - 0.5) * 3) * 0.5;
+        const titleBob = Math.sin(elapsed * 2) * 3;
+
+        ctx.save();
+        ctx.globalAlpha = titleAlpha;
+        ctx.translate(cw / 2, ch * 0.13 + titleBob);
+        ctx.scale(titleScale, titleScale);
+
+        ctx.font = 'bold 22px "Press Start 2P", monospace';
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+        ctx.fillText('¡CASO RESUELTO!', 2, 2);
+
+        const goldPulse = (Math.sin(elapsed * 5) + 1) / 2;
+        ctx.fillStyle = `rgb(${255}, ${200 + Math.floor(goldPulse * 55)}, ${Math.floor(goldPulse * 80)})`;
+        ctx.fillText('¡CASO RESUELTO!', 0, 0);
+        ctx.restore();
+    }
+
+    // FASE 3 (1.5s+): Trofeo animado
+    if (elapsed > 1.5) {
+        const trophyAlpha = Math.min((elapsed - 1.5) * 2, 1);
+        const trophyBob = Math.sin(elapsed * 3) * 5;
+        ctx.globalAlpha = trophyAlpha;
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('\uD83C\uDFC6', cw / 2, ch * 0.28 + trophyBob);
+        ctx.globalAlpha = 1;
+    }
+
+    // FASE 4 (2.5s+): Revelar asesino
+    if (elapsed > 2.5) {
+        const revealAlpha = Math.min((elapsed - 2.5) * 1.5, 1);
+        ctx.globalAlpha = revealAlpha;
+
+        ctx.font = '12px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('El asesino es...', cw / 2, ch * 0.40);
+
+        if (elapsed > 3.5) {
+            const nameAlpha = Math.min((elapsed - 3.5) * 2, 1);
+            const nameScale = 1 + Math.max(0, 1 - (elapsed - 3.5) * 2) * 0.8;
+            ctx.save();
+            ctx.globalAlpha = nameAlpha;
+            ctx.translate(cw / 2, ch * 0.50);
+            ctx.scale(nameScale, nameScale);
+
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 20 + Math.sin(elapsed * 4) * 10;
+
+            ctx.font = 'bold 18px "Press Start 2P", monospace';
+            ctx.fillStyle = '#ff4444';
+            ctx.textAlign = 'center';
+            ctx.fillText('CARLOS MÉNDEZ', 0, 0);
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // FASE 5 (5s+): Pistas resumidas
+    if (elapsed > 5) {
+        const clueAlpha = Math.min((elapsed - 5) * 1.5, 1);
+        ctx.globalAlpha = clueAlpha;
+        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.fillStyle = '#00e6ff';
+        ctx.textAlign = 'center';
+        ctx.fillText('Pruebas encontradas:', cw / 2, ch * 0.60);
+
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillStyle = '#aaa';
+        const maxClues = Math.min(gameState.cluesFound.length, 4);
+        for (let i = 0; i < maxClues; i++) {
+            const short = gameState.cluesFound[i].replace(/[\uD83D\uDD0D\uD83E\uDE78] /g, '').substring(0, 55);
+            ctx.fillText(short, cw / 2, ch * 0.65 + i * 16);
+        }
+        if (gameState.cluesFound.length > 4) {
+            ctx.fillText('...y ' + (gameState.cluesFound.length - 4) + ' pistas más', cw / 2, ch * 0.65 + 4 * 16);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // FASE 6 (7s+): Tiempo y botón continuar
+    if (elapsed > 7) {
+        const footAlpha = Math.min((elapsed - 7) * 2, 1);
+        ctx.globalAlpha = footAlpha;
+
+        const totalSec = Math.floor(gameState.timer / 60);
+        const mins = Math.floor(totalSec / 60);
+        const secs = totalSec % 60;
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffcc00';
+        ctx.textAlign = 'center';
+        ctx.fillText('Tiempo: ' + mins + 'm ' + secs.toString().padStart(2, '0') + 's', cw / 2, ch * 0.84);
+
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText('Pistas: ' + gameState.riddlesSolved + '/' + gameState.totalRiddles, cw / 2, ch * 0.89);
+
+        const btnPulse = (Math.sin(elapsed * 3) + 1) / 2;
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.4 + btnPulse * 0.4})`;
+        ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch * 0.95);
+
+        ctx.globalAlpha = 1;
+    }
+}
+
+function drawAccusationUI() {
+    if (!gameState.showingAccusation) return;
+
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    // Overlay oscuro
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(0, 0, cw, ch);
+
+    const panelW = Math.min(620, cw - 40);
+    const panelH = 420;
+    const panelX = (cw - panelW) / 2;
+    const panelY = (ch - panelH) / 2 - 10;
+
+    // Fondo del panel
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = '#ff4444';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    // Si ya eligió y fue CORRECTO (breve feedback antes de la animación)
+    if (gameState.accusationResult === true) {
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('✅', cw / 2, panelY + panelH / 2 - 30);
+
+        const correctPulse = (Math.sin(Date.now() / 150) + 1) / 2;
+        ctx.font = '16px "Press Start 2P", monospace';
+        ctx.fillStyle = `rgb(0, ${200 + Math.floor(correctPulse * 55)}, ${100 + Math.floor(correctPulse * 55)})`;
+        ctx.fillText('¡CORRECTO!', cw / 2, panelY + panelH / 2 + 20);
+
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillText('¡Has atrapado al asesino!', cw / 2, panelY + panelH / 2 + 55);
+        return;
+    }
+
+    // Si ya eligió y fue incorrecto
+    if (gameState.accusationResult === false) {
+        ctx.font = '28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('❌', cw / 2, panelY + 50);
+
+        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ff4444';
+        ctx.fillText('¡SOSPECHOSO EQUIVOCADO!', cw / 2, panelY + 85);
+
+        ctx.font = '11px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
+        wrapText(ctx, 'Revisa las pistas de nuevo y piensa bien... ¿Quién es el verdadero asesino?', cw / 2, panelY + 130, panelW - 60, 20);
+
+        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.fillStyle = '#aaa';
+        ctx.fillText('Presiona ENTER para intentar de nuevo', cw / 2, panelY + panelH - 20);
+        return;
+    }
+
+    // Ícono
+    ctx.font = '28px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔍⚖️', cw / 2, panelY + 40);
+
+    // Título
+    ctx.font = '14px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ff4444';
+    ctx.fillText('¡MOMENTO DE ACUSAR!', cw / 2, panelY + 70);
+
+    // Contexto
+    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffffff';
+    wrapText(ctx, 'Has reunido todas las pistas. Estás en la escena del crimen. Basándote en la evidencia... ¿Quién es el ASESINO?', cw / 2, panelY + 100, panelW - 60, 20);
+
+    // Pistas recordatorio
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffcc00';
+    ctx.textAlign = 'left';
+    const reminderY = panelY + 155;
+    const maxClues = Math.min(gameState.cluesFound.length, 3);
+    for (let i = 0; i < maxClues; i++) {
+        const shortClue = gameState.cluesFound[i].substring(0, 60) + '...';
+        ctx.fillText(shortClue, panelX + 25, reminderY + i * 14);
+    }
+    if (gameState.cluesFound.length > 3) {
+        ctx.fillText('... y ' + (gameState.cluesFound.length - 3) + ' pistas más', panelX + 25, reminderY + 3 * 14);
+    }
+
+    // Opciones de sospechosos
+    const suspects = [
+        { label: 'A', name: 'Carlos Méndez', desc: 'Vecino con antecedentes' },
+        { label: 'B', name: 'Pedro Ramírez', desc: 'Ex socio de negocios' },
+        { label: 'C', name: 'María López', desc: 'Compañera de trabajo' }
+    ];
+
+    const optionStartY = panelY + 225;
+    const optionH = 48;
+    ctx.textAlign = 'left';
+
+    for (let i = 0; i < suspects.length; i++) {
+        const s = suspects[i];
+        const oy = optionStartY + i * optionH;
+
+        // Fondo de opción
+        ctx.fillStyle = 'rgba(255, 68, 68, 0.1)';
+        ctx.fillRect(panelX + 20, oy, panelW - 40, optionH - 5);
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(panelX + 20, oy, panelW - 40, optionH - 5);
+
+        // Tecla
+        ctx.fillStyle = '#ff4444';
+        ctx.font = 'bold 14px "Press Start 2P", monospace';
+        ctx.fillText(s.label + ')', panelX + 35, oy + 17);
+
+        // Nombre
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '11px "Press Start 2P", monospace';
+        ctx.fillText(s.name, panelX + 80, oy + 17);
+
+        // Descripción
+        ctx.fillStyle = '#888';
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillText(s.desc, panelX + 80, oy + 32);
+    }
+
+    // Instrucción
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Presiona 1-3 o A-C para acusar', cw / 2, panelY + panelH - 10);
+}
 
 function selectRiddleOption(optionIndex) {
     if (gameState.activeRiddle === null) return;
@@ -710,7 +1141,14 @@ function closeResult() {
         gameState.activeRiddle = null;
         // Verificar si se completaron todos
         if (gameState.riddlesSolved >= gameState.totalRiddles) {
-            gameState.showingFinale = true;
+            // NO terminar el juego aquí. El jugador debe ir a la ESCENA DEL CRIMEN.
+            gameState.caseStage = 7;
+            showDialogue(
+                '¡TODAS LAS PISTAS REUNIDAS!',
+                'Has recopilado todas las pistas del caso.\n\n' +
+                'Ahora dirígete a la ESCENA DEL CRIMEN para resolver el misterio.\n\n' +
+                'Habla con Don Roberto si necesitas orientación.'
+            );
         }
     }
     // Si fue incorrecto, el acertijo sigue activo para reintentarlo
@@ -2874,6 +3312,8 @@ function render() {
     drawUI();
     drawDialogueUI();
     drawRiddleUI();
+    drawAccusationUI();
+    drawVictoryAnimation();
 
 
     // Dibujar acertijo si está activo
