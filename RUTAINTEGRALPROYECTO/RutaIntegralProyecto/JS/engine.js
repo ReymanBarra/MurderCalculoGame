@@ -185,8 +185,13 @@ function handleInteraction(x, y) {
                 const dy = bld.y + h - 1;
                 const ddx = bld.x + Math.floor(bld.width / 2);
                 if (x === ddx && y === dy) {
-                    // Entrar a la escena del crimen
+                    // Entrar a la escena del crimen (bloqueado hasta tener todas las pistas)
                     if (bld.label === 'ESCENA DEL CRIMEN') {
+                        if (gameState.riddlesSolved < gameState.totalRiddles) {
+                            interactionMessage = '🚫 Reúne todas las pistas primero';
+                            interactionTimer = 180;
+                            return false;
+                        }
                         enterInterior('crimeScene');
                         return true; // Consumido: teleport
                     }
@@ -211,7 +216,7 @@ function handleInteraction(x, y) {
                         return true;
                     }
                     // Entrar a la casa sospechosa
-                    if (bld.label === 'CASA ???') {
+                    if (bld.label === 'CASA EMBRUJADA') {
                         enterInterior('casa');
                         return true;
                     }
@@ -356,25 +361,25 @@ function handleNpcInteraction(npc) {
         return;
     }
 
-    // ETAPA 10: Resolvió restaurante → va a ESCENA DEL CRIMEN (final)
+    // ETAPA 10: Resolvió restaurante → va a CASA EMBRUJADA (final)
     if (gameState.caseStage === 5 && RIDDLES.find(r => r.id === 5).solved) {
         showDialogue(
             'DON ROBERTO',
             '¡Lo ha logrado, detective!\n\n' +
             'Ahora tiene todas las pistas.\n' +
-            'Vaya a la ESCENA DEL CRIMEN y resuelva el caso final.'
+            'Vaya a la CASA EMBRUJADA y resuelva el caso final.'
         );
         
-        enableRiddleById(2); // escena del crimen
+        enableRiddleById(2); // casa sospechosa
         gameState.caseStage = 6;
         return;
     }
 
-    // ETAPA 11: Esperando que resuelva escena del crimen
+    // ETAPA 11: Esperando que resuelva casa sospechosa
     if (gameState.caseStage === 6 && !RIDDLES.find(r => r.id === 2).solved) {
         showDialogue(
             'DON ROBERTO',
-            'La ESCENA DEL CRIMEN tiene la respuesta final.\n\n' +
+            'La CASA EMBRUJADA tiene la respuesta final.\n\n' +
             '¡Termine el caso!'
         );
         return;
@@ -3120,18 +3125,19 @@ function drawUI() {
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        const msgWidth = ctx.measureText(interactionMessage).width + 40;
+        ctx.font = '14px "Press Start 2P", monospace';
+        const measured = ctx.measureText(interactionMessage).width + 40;
+        const msgWidth = Math.min(measured, canvas.width - 40);
         const msgX = canvas.width / 2 - msgWidth / 2;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.fillRect(msgX, canvas.height - 100, msgWidth, 40);
         ctx.strokeStyle = '#00e6ff';
         ctx.lineWidth = 2;
         ctx.strokeRect(msgX, canvas.height - 100, msgWidth, 40);
 
-        ctx.font = '14px "Press Start 2P", monospace';
         ctx.fillStyle = '#00e6ff';
         ctx.textAlign = 'center';
-        ctx.fillText(interactionMessage, canvas.width / 2, canvas.height - 74);
+        ctx.fillText(interactionMessage, canvas.width / 2, canvas.height - 74, msgWidth - 20);
         ctx.restore();
     }
 

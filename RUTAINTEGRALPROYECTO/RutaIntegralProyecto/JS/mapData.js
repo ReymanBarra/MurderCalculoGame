@@ -300,7 +300,7 @@ function generateCityMap() {
     placePark(2, 26, 8, 3);
 
     // Bloque 8: Casa sospechosa (abajo-derecha)
-    placeBuilding(34, 26, 5, 3, "CASA ???");
+    placeBuilding(34, 26, 5, 3, "CASA EMBRUJADA");
 
     // === ESCENA DEL CRIMEN (alrededor de la tienda) ===
     placeCrimeScene(19, 2, 5, 4);
@@ -526,9 +526,9 @@ const RIDDLES = [
     },
     {
         id: 2,
-        interior: 'crimeScene',
-        x: 4, y: 3,
-        location: 'ESCENA DEL CRIMEN',
+        interior: 'casa',
+        x: 8, y: 4,
+        location: 'CASA EMBRUJADA',
         question: '¿Cuál es el valor de la integral ∫ 2x dx?',
         options: [
             { label: 'a', text: 'x² + C' },
@@ -1647,7 +1647,7 @@ function generateHospitalInterior() {
     };
 }
 
-// Interior de la CASA ??? (12x10 tiles)
+// Interior de la CASA EMBRUJADA (12x10 tiles)
 function generateCasaInterior() {
     const W = 12;
     const H = 10;
@@ -1790,8 +1790,8 @@ function generateCasaInterior() {
         objects: objects,
         collision: collision,
         playerStart: { x: doorX, y: H - 2 },
-        label: 'CASA ??? - Interior',
-        buildingRef: 'CASA ???',
+        label: 'CASA EMBRUJADA - Interior',
+        buildingRef: 'CASA EMBRUJADA',
         outsideDoor: { x: 36, y: 29 },
     };
 }
