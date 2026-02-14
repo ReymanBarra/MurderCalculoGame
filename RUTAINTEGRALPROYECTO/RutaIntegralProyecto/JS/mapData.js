@@ -662,9 +662,6 @@ function enableRiddleById(id) {
     if (!gameState.enabledRiddleIds.includes(id)) {
         gameState.enabledRiddleIds.push(id);
     }
-
-    // 👇 AGREGAR ESTA LÍNEA
-    gameState.enabledRiddleIds.push(id);
 }
 
 window.enableRiddleById = enableRiddleById;

@@ -256,32 +256,7 @@ function handleNpcInteraction(npc) {
 
         gameState.needsNpcGuidance = false;
         gameState.finalClueUnlocked = true;
-
-        // HABILITAR INMEDIATAMENTE, SIN IFs
-        gameState.enabledRiddleIds.push(7);
-
-        console.log('✅ Riddle 7 habilitado AHORA');
-        console.log('enabledRiddleIds:', gameState.enabledRiddleIds);
-
-        return;
-    }
-
-    if (gameState.needsNpcGuidance === 'finalclue') {
-        showDialogue(
-            'DON ROBERTO',
-            `Acusó a ${gameState.lastWrongSuspect}, pero no es el asesino.\n\n` +
-            'Detective, hay algo que pasamos por alto.\n' +
-            'Vaya a los APARTAMENTOS otra vez.\n\n' +
-            'Hay una PISTA FINAL que revelará la verdad.\n' +
-            'Busque con cuidado... es su última oportunidad.'
-        );
-
-        gameState.needsNpcGuidance = false;
-
-        if (!gameState.finalClueUnlocked) {
-            gameState.finalClueUnlocked = true;
-            enableRiddleById(7);
-        }
+        enableRiddleById(7);
         return;
     }
 
@@ -898,12 +873,17 @@ function closeAccusationResult() {
     if (gameState.accusationResult === true) {
         return;
     } else {
-        // INCORRECTO: Salir de la escena del crimen
         gameState.showingAccusation = false;
         gameState.accusationResult = null;
-        exitInterior();
 
-        // Mensaje de que debe ir con el NPC
+        // Si agotó intentos → GAME OVER inmediato
+        if (gameState.attempts >= gameState.maxAttempts) {
+            gameState.gameComplete = true;
+            return;
+        }
+
+        // INCORRECTO pero aún tiene intentos: Salir de la escena del crimen
+        exitInterior();
         interactionMessage = '❌ Acusación incorrecta. Ve con DON ROBERTO';
         interactionTimer = 240;
     }
