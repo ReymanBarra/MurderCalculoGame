@@ -361,8 +361,11 @@ body {
 }
 
 .info-container h1 {
-    font-size: 2.5rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2rem;
     margin-bottom: 25px;
+    color: #00c6ff;
+    text-shadow: 0 0 10px rgba(0, 198, 255, 0.5);
 }
 
 .info-text p {

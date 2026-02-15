@@ -189,14 +189,15 @@ const player = {
     direction: 'down',  // up, down, left, right
 
     update() {
-        // Interpolación suave hacia la posición objetivo
+        // Interpolación suave hacia la posición objetivo (normalizada a 60fps)
+        const dtFactor = frameDeltaMs / 16.67; // 1.0 a 60fps, 0.5 a 120fps
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist > 0.02) {
-            this.x += dx * this.speed * 3;
-            this.y += dy * this.speed * 3;
+            this.x += dx * this.speed * 3 * dtFactor;
+            this.y += dy * this.speed * 3 * dtFactor;
             this.moving = true;
         } else {
             this.x = this.targetX;
@@ -841,31 +842,34 @@ canvas.addEventListener('click', (e) => {
     }
 });
 
-// Intervalo de movimiento (para que no sea instantáneo)
+// Intervalo de movimiento (normalizado a 60fps)
 let moveTimer = 0;
-const MOVE_DELAY = 8; // Frames entre movimientos
+const TARGET_FPS = 60;
+const MOVE_DELAY_MS = 133; // milisegundos entre movimientos (~8 frames a 60fps)
+let lastFrameTime = performance.now();
+let frameDeltaMs = 16.67; // default 60fps
 
 function handleInput() {
     // Bloquear movimiento si hay un acertijo o pantalla activa
     if (gameState.activeRiddle !== null || gameState.showingResult || gameState.showingFinale || gameState.gameComplete || gameState.showingAccusation || gameState.showingVictory) return;
 
     if (moveTimer > 0) {
-        moveTimer--;
+        moveTimer -= frameDeltaMs;
         return;
     }
 
     if (keys['ArrowUp'] || keys['w'] || keys['W']) {
         player.tryMove(0, -1);
-        moveTimer = MOVE_DELAY;
+        moveTimer = MOVE_DELAY_MS;
     } else if (keys['ArrowDown'] || keys['s'] || keys['S']) {
         player.tryMove(0, 1);
-        moveTimer = MOVE_DELAY;
+        moveTimer = MOVE_DELAY_MS;
     } else if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
         player.tryMove(-1, 0);
-        moveTimer = MOVE_DELAY;
+        moveTimer = MOVE_DELAY_MS;
     } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
         player.tryMove(1, 0);
-        moveTimer = MOVE_DELAY;
+        moveTimer = MOVE_DELAY_MS;
     }
     // Movimiento con joystick móvil
     else if (mobileControls.joystick.active) {
@@ -873,9 +877,9 @@ function handleInput() {
         if (js.dirX !== 0 || js.dirY !== 0) {
             if (mobileControls.moveTimer <= 0) {
                 player.tryMove(js.dirX, js.dirY);
-                mobileControls.moveTimer = mobileControls.moveDelay;
+                mobileControls.moveTimer = MOVE_DELAY_MS;
             } else {
-                mobileControls.moveTimer--;
+                mobileControls.moveTimer -= frameDeltaMs;
             }
         }
     } else {
@@ -1542,6 +1546,8 @@ function drawSuspectLuis(c) {
 
 function selectRiddleOption(optionIndex) {
     if (gameState.activeRiddle === null) return;
+    // Ignorar seleccion inmediata (evita que WASD auto-responda al pisar el tile)
+    if (gameState._riddleActivatedAt && (performance.now() - gameState._riddleActivatedAt) < 300) return;
     const riddle = gameState.activeRiddle;
 
     // La respuesta correcta siempre es 'a' (index 0)
@@ -4481,7 +4487,8 @@ function drawRiddleUI() {
     const cw = canvas.width;
     const ch = canvas.height;
     const s = Math.min(cw, 800) / 800;
-    const isLandscape = cw > ch;
+    // Solo aplicar layout compacto en landscape MÓVIL (altura chica), no en PC
+    const isLandscape = cw > ch && ch < 500;
 
     // Overlay oscuro
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
@@ -4776,36 +4783,42 @@ function drawProgressHUD() {
     const barH = Math.max(8, Math.round(12 * s));
     const fontSize = Math.max(6, Math.round(8 * s));
 
+    // Posiciones verticales claras
+    const labelY = hudY + Math.round(12 * s);          // "PISTAS: X/Y"
+    const barTopY = hudY + Math.round(18 * s);          // barra de progreso
+    const timerY = barTopY + barH + Math.round(14 * s); // timer DEBAJO de la barra
+    const totalH = timerY - hudY + Math.round(4 * s);   // alto total del fondo
+
     // Fondo
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(hudX - 2, hudY - 2, barW + 4, Math.round(40 * s));
+    ctx.fillRect(hudX - 2, hudY - 2, barW + 4, totalH);
 
     // Etiqueta
     ctx.font = fontSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffcc00';
     ctx.textAlign = 'left';
-    ctx.fillText(`PISTAS: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, hudX + 4, hudY + Math.round(10 * s));
+    ctx.fillText(`PISTAS: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, hudX + 4, labelY);
 
     // Barra de progreso
     ctx.fillStyle = '#333';
-    ctx.fillRect(hudX + 4, hudY + Math.round(16 * s), barW - 8, barH);
+    ctx.fillRect(hudX + 4, barTopY, barW - 8, barH);
 
     const fillW = ((barW - 8) * gameState.riddlesSolved) / gameState.totalRiddles;
     ctx.fillStyle = gameState.riddlesSolved >= gameState.totalRiddles ? '#00ff88' : '#00e6ff';
-    ctx.fillRect(hudX + 4, hudY + Math.round(16 * s), fillW, barH);
+    ctx.fillRect(hudX + 4, barTopY, fillW, barH);
 
     ctx.strokeStyle = '#00e6ff';
     ctx.lineWidth = 1;
-    ctx.strokeRect(hudX + 4, hudY + Math.round(16 * s), barW - 8, barH);
+    ctx.strokeRect(hudX + 4, barTopY, barW - 8, barH);
 
-    // Timer (esquina superior izq, debajo de pistas)
+    // Timer (debajo de la barra, con espacio claro)
     gameState.timer++;
     const totalSec = Math.floor(gameState.timer / 60);
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
     ctx.font = fontSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = mins >= 25 ? '#ff4444' : '#aaa';
-    ctx.fillText(`⏱ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`, hudX + 4, hudY + Math.round(36 * s));
+    ctx.fillText(`⏱ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`, hudX + 4, timerY);
 }
 
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
@@ -4835,6 +4848,11 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
 // GAME LOOP
 // ============================
 function gameLoop() {
+    // Calcular delta time para normalizar velocidad
+    const now = performance.now();
+    frameDeltaMs = Math.min(now - lastFrameTime, 50); // cap a 50ms para evitar saltos
+    lastFrameTime = now;
+
     handleInput();
     player.update();
     camera.follow(player);
