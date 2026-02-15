@@ -99,6 +99,15 @@ const imgIconTalk = new Image();
 imgIconTalk.src = ctrlIconPath + 'icon_talk.png';
 imgIconTalk.onerror = () => console.warn('⚠️ No se pudo cargar icon talk');
 
+// ============================
+// SONIDOS
+// ============================
+const errorSound = new Audio('../assets/sound/freesound_community-game-over-arcade-6435(1).mp3');
+errorSound.volume = 0.7;
+
+const correctSound = new Audio('../assets/sound/koiroylers-correct-356013.mp3');
+correctSound.volume = 0.7;
+
 // Estado del joystick y botón de acción
 const mobileControls = {
     isTouchDevice: false,
@@ -960,6 +969,11 @@ function selectAccusationOption(optionIndex) {
     if (selectedSuspect.isKiller) {
         // ¡CORRECTO!
         gameState.accusationResult = true;
+        
+        // Reproducir sonido de correcto
+        correctSound.currentTime = 0;
+        correctSound.play().catch(e => console.log("No se pudo reproducir sonido de correcto:", e));
+        
         setTimeout(() => {
             gameState.showingAccusation = false;
             startVictoryAnimation();
@@ -970,6 +984,10 @@ function selectAccusationOption(optionIndex) {
         gameState.attempts++;
         gameState.failedSuspects.push(selectedSuspect.id);
         gameState.lastWrongSuspect = selectedSuspect.name;
+        
+        // Reproducir sonido de error
+        errorSound.currentTime = 0;
+        errorSound.play().catch(e => console.log("No se pudo reproducir sonido de error:", e));
 
         if (gameState.attempts >= gameState.maxAttempts) {
             gameState.needsNpcGuidance = 'gameover';
@@ -1558,8 +1576,15 @@ function selectRiddleOption(optionIndex) {
         gameState.resultCorrect = true;
         // Quitar marcador del mapa
         mapObjects[riddle.y][riddle.x] = T.EMPTY;
+        
+        // Reproducir sonido de correcto
+        correctSound.currentTime = 0;
+        correctSound.play().catch(e => console.log("No se pudo reproducir sonido de correcto:", e));
     } else {
         gameState.resultCorrect = false;
+        // Reproducir sonido de error
+        errorSound.currentTime = 0;
+        errorSound.play().catch(e => console.log("No se pudo reproducir sonido de error:", e));
     }
     gameState.showingResult = true;
 }

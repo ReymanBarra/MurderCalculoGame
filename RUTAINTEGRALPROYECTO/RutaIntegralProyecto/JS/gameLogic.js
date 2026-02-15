@@ -84,6 +84,14 @@ const bgMusic = new Audio('../assets/sound/audio2.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.4;
 
+// Sonido de error para respuestas incorrectas
+const errorSound = new Audio('../assets/sound/freesound_community-game-over-arcade-6435(1).mp3');
+errorSound.volume = 0.7;
+
+// Sonido de respuesta correcta
+const correctSound = new Audio('../assets/sound/koiroylers-correct-356013.mp3');
+correctSound.volume = 0.7;
+
 // 3. VARIABLES DE ESTADO (Originales)
 let progress = 0;
 let progressInterval = null;
@@ -135,6 +143,9 @@ options.forEach(option => {
         const isCorrect = option.dataset.correct === "true";
 
         if (isCorrect) {
+            correctSound.currentTime = 0;
+            correctSound.play().catch(e => console.log("No se pudo reproducir sonido de correcto:", e));
+            
             decisionPanel.classList.remove("active");
             obstacle.classList.remove("active");
 
@@ -146,6 +157,8 @@ options.forEach(option => {
                 finishGame();
             }
         } else {
+            errorSound.currentTime = 0;
+            errorSound.play().catch(e => console.log("No se pudo reproducir sonido de error:", e));
             feedback.textContent = "Incorrecto. Intenta otra opción.";
         }
     });

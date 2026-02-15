@@ -151,7 +151,27 @@
 
   </main>
 
+  <!-- Música de fondo -->
+  <audio id="backgroundMusic" loop>
+    <source src="assets/sound/moodmode-game-8-bit-on-278083.mp3" type="audio/mpeg">
+  </audio>
+
   <!-- Scripts -->
   <script src="JS/main.js"></script>
+  <script>
+    // Reproducir música de fondo cuando el usuario interactúe con la página
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    
+    function playBackgroundMusic() {sa
+      if (backgroundMusic && backgroundMusic.paused) {
+        backgroundMusic.volume = 0.3; // Volumen al 30%
+        backgroundMusic.play().catch(err => console.log('Autoplay prevenido:', err));
+      }
+    }
+    
+    // Reproducir al hacer clic en cualquier lugar de la página
+    document.addEventListener('click', playBackgroundMusic, { once: true });
+    document.addEventListener('touchstart', playBackgroundMusic, { once: true });
+  </script>
 </body>
 </html>

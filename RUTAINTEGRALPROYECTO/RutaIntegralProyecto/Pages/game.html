@@ -242,6 +242,28 @@
         })();
     </script>
 
+    <!-- Música de fondo -->
+    <audio id="backgroundMusic" loop autoplay>
+        <source src="../assets/sound/bobbeats-8-bit-loop-music-290770.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Reproducir música de fondo en loop fluido
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        
+        function playBackgroundMusic() {
+            if (backgroundMusic && backgroundMusic.paused) {
+                backgroundMusic.volume = 0.3; // Volumen al 30%
+                backgroundMusic.play().catch(err => console.log('Autoplay controlado:', err));
+            }
+        }
+        
+        // Permitir reproducción desde usuario interaction
+        document.addEventListener('click', playBackgroundMusic, { once: true });
+        document.addEventListener('touchstart', playBackgroundMusic, { once: true });
+        document.addEventListener('keydown', playBackgroundMusic, { once: true });
+    </script>
+
 </body>
 
 </html>
