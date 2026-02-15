@@ -3,13 +3,20 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Murder Cálculo - Mundo Abierto</title>
 
     <!-- Google Font Retro -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
     <style>
+        /* Exponer safe-area-insets como custom properties para leerlas desde JS */
+        :root {
+            --sab: env(safe-area-inset-bottom, 0px);
+            --sal: env(safe-area-inset-left, 0px);
+            --sar: env(safe-area-inset-right, 0px);
+            --sat: env(safe-area-inset-top, 0px);
+        }
         * {
             margin: 0;
             padding: 0;
@@ -21,6 +28,7 @@
             overflow: hidden;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             cursor: crosshair;
             font-family: 'Press Start 2P', monospace;
         }
@@ -29,6 +37,7 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }

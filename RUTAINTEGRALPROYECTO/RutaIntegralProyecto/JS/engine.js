@@ -6,13 +6,44 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // ============================
-// CONFIGURACIÓN DE PANTALLA
+// CONFIGURACIÓN DE PANTALLA (v2.1 - fix mobile margins)
 // ============================
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+// Safe area inset para dispositivos con notch/home indicator
+let safeAreaBottom = 0;
+let safeAreaLeft = 0;
+let safeAreaRight = 0;
+
+function updateSafeArea() {
+    try {
+        const root = document.documentElement;
+        const cs = getComputedStyle(root);
+        safeAreaBottom = parseInt(cs.getPropertyValue('--sab')) || 0;
+        safeAreaLeft = parseInt(cs.getPropertyValue('--sal')) || 0;
+        safeAreaRight = parseInt(cs.getPropertyValue('--sar')) || 0;
+    } catch (e) {
+        safeAreaBottom = 0;
+        safeAreaLeft = 0;
+        safeAreaRight = 0;
+    }
 }
+
+function resizeCanvas() {
+    // Usar visualViewport si está disponible (más preciso en móviles)
+    if (window.visualViewport) {
+        canvas.width = Math.round(window.visualViewport.width);
+        canvas.height = Math.round(window.visualViewport.height);
+    } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    updateSafeArea();
+}
+
+// Escuchar resize y visualViewport
 window.addEventListener('resize', resizeCanvas);
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resizeCanvas);
+}
 resizeCanvas();
 
 // ============================
@@ -792,23 +823,19 @@ canvas.addEventListener('click', (e) => {
         return;
     }
     if (gameState.activeRiddle !== null) {
-        // Detectar click en opciones
+        // Usar coordenadas guardadas por drawRiddleUI
         const rect = canvas.getBoundingClientRect();
         const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
         const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
-        const cw = canvas.width;
-        const ch = canvas.height;
-        const panelW = Math.min(600, cw - 40);
-        const panelX = (cw - panelW) / 2;
-        const optionStartY = ch / 2 - 20;
-        const optionH = 45;
-
-        for (let i = 0; i < 4; i++) {
-            const oy = optionStartY + i * optionH;
-            if (clickX >= panelX + 20 && clickX <= panelX + panelW - 20 &&
-                clickY >= oy && clickY <= oy + optionH - 5) {
-                selectRiddleOption(i);
-                break;
+        const coords = gameState._riddleOptionCoords;
+        if (coords) {
+            for (let i = 0; i < coords.count; i++) {
+                const oy = coords.optionStartY + i * coords.optionH;
+                if (clickX >= coords.panelX + 10 && clickX <= coords.panelX + coords.panelW - 10 &&
+                    clickY >= oy && clickY <= oy + coords.optionH - 3) {
+                    selectRiddleOption(i);
+                    break;
+                }
             }
         }
     }
@@ -996,6 +1023,7 @@ function drawVictoryAnimation() {
 
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
     const elapsed = (Date.now() - gameState.victoryStartTime) / 1000;
 
     // Fondo oscuro con fade in
@@ -1038,7 +1066,7 @@ function drawVictoryAnimation() {
         ctx.translate(cw / 2, ch * 0.13 + titleBob);
         ctx.scale(titleScale, titleScale);
 
-        ctx.font = 'bold 22px "Press Start 2P", monospace';
+        ctx.font = 'bold ' + Math.max(14, Math.round(22 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#000';
         ctx.textAlign = 'center';
         ctx.fillText('¡CASO RESUELTO!', 2, 2);
@@ -1054,7 +1082,7 @@ function drawVictoryAnimation() {
         const trophyAlpha = Math.min((elapsed - 1.5) * 2, 1);
         const trophyBob = Math.sin(elapsed * 3) * 5;
         ctx.globalAlpha = trophyAlpha;
-        ctx.font = '48px Arial';
+        ctx.font = Math.max(32, Math.round(48 * s)) + 'px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('\uD83C\uDFC6', cw / 2, ch * 0.28 + trophyBob);
         ctx.globalAlpha = 1;
@@ -1065,7 +1093,7 @@ function drawVictoryAnimation() {
         const revealAlpha = Math.min((elapsed - 2.5) * 1.5, 1);
         ctx.globalAlpha = revealAlpha;
 
-        ctx.font = '12px "Press Start 2P", monospace';
+        ctx.font = Math.max(9, Math.round(12 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.fillText('El asesino es...', cw / 2, ch * 0.40);
@@ -1081,7 +1109,7 @@ function drawVictoryAnimation() {
             ctx.shadowColor = '#ff0000';
             ctx.shadowBlur = 20 + Math.sin(elapsed * 4) * 10;
 
-            ctx.font = 'bold 18px "Press Start 2P", monospace';
+            ctx.font = 'bold ' + Math.max(12, Math.round(18 * s)) + 'px "Press Start 2P", monospace';
             ctx.fillStyle = '#ff4444';
             ctx.textAlign = 'center';
             ctx.fillText('CARLOS MÉNDEZ', 0, 0);
@@ -1096,20 +1124,21 @@ function drawVictoryAnimation() {
     if (elapsed > 5) {
         const clueAlpha = Math.min((elapsed - 5) * 1.5, 1);
         ctx.globalAlpha = clueAlpha;
-        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.font = Math.max(7, Math.round(9 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#00e6ff';
         ctx.textAlign = 'center';
         ctx.fillText('Pruebas encontradas:', cw / 2, ch * 0.60);
 
-        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.font = Math.max(6, Math.round(8 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#aaa';
         const maxClues = Math.min(gameState.cluesFound.length, 4);
+        const clueLineH = Math.max(12, Math.round(16 * s));
         for (let i = 0; i < maxClues; i++) {
             const short = gameState.cluesFound[i].replace(/[\uD83D\uDD0D\uD83E\uDE78] /g, '').substring(0, 55);
-            ctx.fillText(short, cw / 2, ch * 0.65 + i * 16);
+            ctx.fillText(short, cw / 2, ch * 0.65 + i * clueLineH);
         }
         if (gameState.cluesFound.length > 4) {
-            ctx.fillText('...y ' + (gameState.cluesFound.length - 4) + ' pistas más', cw / 2, ch * 0.65 + 4 * 16);
+            ctx.fillText('...y ' + (gameState.cluesFound.length - 4) + ' pistas más', cw / 2, ch * 0.65 + 4 * clueLineH);
         }
         ctx.globalAlpha = 1;
     }
@@ -1122,7 +1151,7 @@ function drawVictoryAnimation() {
         const totalSec = Math.floor(gameState.timer / 60);
         const mins = Math.floor(totalSec / 60);
         const secs = totalSec % 60;
-        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ffcc00';
         ctx.textAlign = 'center';
         ctx.fillText('Tiempo: ' + mins + 'm ' + secs.toString().padStart(2, '0') + 's', cw / 2, ch * 0.84);
@@ -1131,7 +1160,7 @@ function drawVictoryAnimation() {
         ctx.fillText('Pistas: ' + gameState.riddlesSolved + '/' + gameState.totalRiddles, cw / 2, ch * 0.89);
 
         const btnPulse = (Math.sin(elapsed * 3) + 1) / 2;
-        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = `rgba(255, 255, 255, ${0.4 + btnPulse * 0.4})`;
         ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch * 0.95);
 
@@ -1144,13 +1173,14 @@ function drawAccusationUI() {
 
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
 
     // Overlay oscuro
     ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
     ctx.fillRect(0, 0, cw, ch);
 
-    const panelW = Math.min(700, cw - 20);
-    const panelH = Math.min(500, ch - 20);
+    const panelW = Math.min(700, cw - 16);
+    const panelH = Math.min(500, ch - 16);
     const panelX = (cw - panelW) / 2;
     const panelY = (ch - panelH) / 2;
 
@@ -1723,19 +1753,17 @@ function handleScreenTap(tapX, tapY) {
         return;
     }
 
-    // Acertijo activo - seleccionar opción
+    // Acertijo activo - seleccionar opción (usar coordenadas guardadas por drawRiddleUI)
     if (gameState.activeRiddle !== null) {
-        const panelW = Math.min(600, cw - 40);
-        const panelX = (cw - panelW) / 2;
-        const optionStartY = ch / 2 - 20;
-        const optionH = 45;
-
-        for (let i = 0; i < 4; i++) {
-            const oy = optionStartY + i * optionH;
-            if (tapX >= panelX + 20 && tapX <= panelX + panelW - 20 &&
-                tapY >= oy && tapY <= oy + optionH - 5) {
-                selectRiddleOption(i);
-                return;
+        const coords = gameState._riddleOptionCoords;
+        if (coords) {
+            for (let i = 0; i < coords.count; i++) {
+                const oy = coords.optionStartY + i * coords.optionH;
+                if (tapX >= coords.panelX + 10 && tapX <= coords.panelX + coords.panelW - 10 &&
+                    tapY >= oy && tapY <= oy + coords.optionH - 3) {
+                    selectRiddleOption(i);
+                    return;
+                }
             }
         }
     }
@@ -1743,8 +1771,19 @@ function handleScreenTap(tapX, tapY) {
 
 canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
+
+    // Si hay UI de acertijo/acusación/resultado/diálogo activa, todos los toques van a handleScreenTap
+    const uiActive = gameState.activeRiddle !== null || gameState.showingResult || gameState.showingDialogue ||
+                     gameState.showingAccusation || gameState.showingFinale || gameState.gameComplete || gameState.showingVictory;
+
     for (const touch of e.changedTouches) {
         const pos = canvasTouchPos(touch);
+
+        if (uiActive) {
+            // Toda la pantalla es para la UI, no joystick ni botón de acción
+            handleScreenTap(pos.x, pos.y);
+            continue;
+        }
 
         // Joystick
         if (!mobileControls.joystick.active && isInJoystickZone(pos.x, pos.y)) {
@@ -1763,7 +1802,7 @@ canvas.addEventListener('touchstart', (e) => {
             continue;
         }
 
-        // Si el touch NO fue en joystick ni action, simular click para UI (acertijos, acusación, etc.)
+        // Si el touch NO fue en joystick ni action, simular click para UI
         handleScreenTap(pos.x, pos.y);
     }
 }, { passive: false });
@@ -4099,40 +4138,48 @@ function drawDialogueUI() {
     if (!gameState.showingDialogue) return; // Solo mostrar si hay diálogo activo
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800; // factor de escala universal
 
     // Fondo oscuro
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Panel
-    const w = 600;
-    const h = 300;
+    // Panel responsive
+    const w = Math.min(600, cw - 30);
+    const h = Math.min(300, ch - 40);
     const x = (cw - w) / 2;
     const y = (ch - h) / 2;
 
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = '#00e6ff';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, 3 * s);
     ctx.strokeRect(x, y, w, h);
 
     // Título
-    ctx.font = '14px "Press Start 2P", monospace';
+    const titleSize = Math.max(10, Math.round(14 * s));
+    ctx.font = titleSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffcc00';
     ctx.textAlign = 'center';
-    ctx.fillText(gameState.dialogueTitle, cw / 2, y + 40);
+    ctx.fillText(gameState.dialogueTitle, cw / 2, y + Math.round(40 * s));
 
     // Texto
-    ctx.font = '11px "Press Start 2P", monospace';
+    const bodySize = Math.max(8, Math.round(11 * s));
+    const lineH = Math.max(14, Math.round(18 * s));
+    ctx.font = bodySize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
-    wrapText(ctx, gameState.dialogueBody, x + 30, y + 80, w - 60, 18);
+    wrapText(ctx, gameState.dialogueBody, x + 20, y + Math.round(70 * s), w - 40, lineH);
 
     // Pie
-    ctx.font = '9px "Press Start 2P", monospace';
+    const footSize = Math.max(7, Math.round(9 * s));
+    ctx.font = footSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#aaa';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona ENTER o B para cerrar', cw / 2, y + h - 20);
+    ctx.fillText('Presiona ENTER o toca para cerrar', cw / 2, y + h - Math.round(15 * s));
+
+    // Guardar rect de cierre para tap
+    _dialogCloseRect = { x: x, y: y, w: w, h: h };
 }
 
 
@@ -4148,21 +4195,8 @@ function onCanvasPointer(e) {
     const px = (e.clientX - rect.left) * (canvas.width / rect.width);
     const py = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    // mismas medidas que en drawDialogueUI()
-    const cw = canvas.width;
-    const ch = canvas.height;
-    const panelW = Math.min(720, cw - 30);
-    const panelH = Math.min(420, ch - 40);
-    const panelX = (cw - panelW) / 2;
-    const panelY = (ch - panelH) / 2;
-
-    // área de la X (esquina superior derecha del panel)
-    const xSize = 32;
-    const xPad = 14;
-    const xRectX = panelX + panelW - xSize - xPad;
-    const xRectY = panelY + xPad;
-
-    if (isInside(px, py, xRectX, xRectY, xSize, xSize)) {
+    // Usar las mismas dimensiones que drawDialogueUI
+    if (_dialogCloseRect && isInside(px, py, _dialogCloseRect.x, _dialogCloseRect.y, _dialogCloseRect.w, _dialogCloseRect.h)) {
         closeDialogue();
     }
 
@@ -4193,12 +4227,14 @@ function drawUI() {
     if (interactionTimer > 0) {
         interactionTimer--;
         const alpha = interactionTimer > 30 ? 1 : interactionTimer / 30;
+        const s = Math.min(canvas.width, 800) / 800;
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.font = '14px "Press Start 2P", monospace';
-        const measured = ctx.measureText(interactionMessage).width + 40;
-        const msgWidth = Math.min(measured, canvas.width - 40);
+        const intFs = Math.max(10, Math.round(14 * s));
+        ctx.font = intFs + 'px "Press Start 2P", monospace';
+        const measured = ctx.measureText(interactionMessage).width + 30;
+        const msgWidth = Math.min(measured, canvas.width - 20);
         const msgX = canvas.width / 2 - msgWidth / 2;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.fillRect(msgX, canvas.height - 100, msgWidth, 40);
@@ -4225,8 +4261,9 @@ function drawUI() {
 }
 
 function drawMinimap() {
-    const mmSize = 120;
-    const mmPadding = 10;
+    const s = Math.min(canvas.width, 800) / 800;
+    const mmSize = Math.max(70, Math.round(120 * s));
+    const mmPadding = Math.round(8 * s);
     const mmX = canvas.width - mmSize - mmPadding;
     const mmY = mmPadding;
     const tileW = mmSize / MAP_WIDTH;
@@ -4278,17 +4315,37 @@ function drawMinimap() {
 function drawMobileControls() {
     if (!mobileControls.isTouchDevice) return;
 
+    // No dibujar controles cuando hay UI de pantalla completa activa
+    if (gameState.activeRiddle !== null || gameState.showingResult ||
+        gameState.showingAccusation || gameState.showingFinale ||
+        gameState.gameComplete || gameState.showingVictory) return;
+
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
     const js = mobileControls.joystick;
     const ab = mobileControls.actionBtn;
 
-    // Posiciones dinámicas
-    const padding = 30;
-    js.centerX = padding + js.size / 2;
-    js.centerY = ch - padding - js.size / 2;
-    ab.x = cw - padding - ab.size;
-    ab.y = ch - padding - ab.size;
+    // Escalar tamaños dinámicamente
+    js.size = Math.max(80, Math.round(130 * s));
+    js.radius = Math.max(30, Math.round(50 * s));
+    ab.size = Math.max(55, Math.round(80 * s));
+
+    // Posiciones dinámicas con margen MUY generoso para barras de navegación móviles
+    // En portrait: ~8% del alto como margen inferior. En landscape: ~12% del alto
+    const isLandscape = cw > ch;
+    const bottomPercent = isLandscape ? 0.12 : 0.08;
+    const sidePercent = isLandscape ? 0.04 : 0.05;
+    
+    // Mínimos absolutos generosos + porcentaje del viewport + safe area
+    const bottomPadding = Math.max(55, Math.round(ch * bottomPercent)) + safeAreaBottom;
+    const leftPadding = Math.max(30, Math.round(cw * sidePercent)) + safeAreaLeft;
+    const rightPadding = Math.max(30, Math.round(cw * sidePercent)) + safeAreaRight;
+    
+    js.centerX = leftPadding + js.size / 2;
+    js.centerY = ch - bottomPadding - js.size / 2;
+    ab.x = cw - rightPadding - ab.size;
+    ab.y = ch - bottomPadding - ab.size;
 
     // === JOYSTICK ===
     ctx.save();
@@ -4423,48 +4480,70 @@ function drawRiddleUI() {
 
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
+    const isLandscape = cw > ch;
 
     // Overlay oscuro
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Panel central
-    const panelW = Math.min(600, cw - 40);
-    const panelH = 360;
+    // Panel central responsive - en landscape usar casi toda la altura
+    const panelW = Math.min(600, cw - 20);
+    const panelH = isLandscape ? Math.min(ch - 10, 340) : Math.min(360, ch - 20);
     const panelX = (cw - panelW) / 2;
-    const panelY = (ch - panelH) / 2 - 30;
+    const panelY = isLandscape ? 5 : ((ch - panelH) / 2 - Math.round(15 * s));
 
     // Fondo del panel
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(panelX, panelY, panelW, panelH);
     ctx.strokeStyle = '#00e6ff';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, 3 * s);
     ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-    // Icono de evidencia
-    ctx.font = '28px Arial';
+    // Icono de evidencia - más pequeño en landscape
+    const iconFs = isLandscape ? Math.max(14, Math.round(18 * s)) : Math.max(18, Math.round(28 * s));
+    ctx.font = iconFs + 'px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('🔎', cw / 2, panelY + 35);
+    ctx.fillText('🔎', cw / 2, panelY + (isLandscape ? 16 : Math.round(30 * s)));
 
-    // Título
-    ctx.font = '14px "Press Start 2P", monospace';
+    // Título - más compacto en landscape
+    const titleFs = isLandscape ? Math.max(7, Math.round(10 * s)) : Math.max(9, Math.round(14 * s));
+    ctx.font = titleFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffcc00';
     ctx.textAlign = 'center';
-    ctx.fillText('Selecciona la opción correcta', cw / 2, panelY + 65);
+    ctx.fillText('Selecciona la opción correcta', cw / 2, panelY + (isLandscape ? 30 : Math.round(55 * s)));
 
     // Ubicación
-    ctx.font = '10px "Press Start 2P", monospace';
+    const locFs = isLandscape ? Math.max(6, Math.round(7 * s)) : Math.max(7, Math.round(10 * s));
+    ctx.font = locFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#888';
-    ctx.fillText(`📍 ${riddle.location} - Acertijo ${riddle.id}/${gameState.totalRiddles}`, cw / 2, panelY + 90);
+    ctx.fillText(`📍 ${riddle.location} - Acertijo ${riddle.id}/${gameState.totalRiddles}`, cw / 2, panelY + (isLandscape ? 42 : Math.round(77 * s)));
 
     // Pregunta
-    ctx.font = '13px "Press Start 2P", monospace';
+    const qFs = isLandscape ? Math.max(7, Math.round(9 * s)) : Math.max(9, Math.round(13 * s));
+    ctx.font = qFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffffff';
-    wrapText(ctx, riddle.question, cw / 2, panelY + 125, panelW - 60, 22);
+    const qY = panelY + (isLandscape ? 58 : Math.round(105 * s));
+    const qLineH = isLandscape ? Math.max(12, Math.round(14 * s)) : Math.max(16, Math.round(22 * s));
+    wrapText(ctx, riddle.question, cw / 2, qY, panelW - 40, qLineH);
 
-    // Opciones
-    const optionStartY = panelY + 180;
-    const optionH = 45;
+    // Opciones - en landscape calcular para que quepan todas
+    const optTopOffset = isLandscape ? 90 : Math.round(155 * s);
+    const optionStartY = panelY + optTopOffset;
+    const footerSpace = 16;
+    const availableH = (panelY + panelH - footerSpace) - optionStartY;
+    const optionH = isLandscape
+        ? Math.max(24, Math.floor(availableH / riddle.options.length))
+        : Math.max(32, Math.round(45 * s));
+
+    // Guardar coordenadas para detección de tap
+    gameState._riddleOptionCoords = {
+        panelX: panelX,
+        panelW: panelW,
+        optionStartY: optionStartY,
+        optionH: optionH,
+        count: riddle.options.length
+    };
 
     for (let i = 0; i < riddle.options.length; i++) {
         const opt = riddle.options[i];
@@ -4472,40 +4551,44 @@ function drawRiddleUI() {
 
         // Fondo de la opción
         ctx.fillStyle = 'rgba(0, 230, 255, 0.1)';
-        ctx.fillRect(panelX + 20, oy, panelW - 40, optionH - 5);
+        ctx.fillRect(panelX + 10, oy, panelW - 20, optionH - 4);
         ctx.strokeStyle = '#00e6ff';
         ctx.lineWidth = 1;
-        ctx.strokeRect(panelX + 20, oy, panelW - 40, optionH - 5);
+        ctx.strokeRect(panelX + 10, oy, panelW - 20, optionH - 4);
 
         // Tecla
+        const keyFs = isLandscape ? Math.max(8, Math.round(10 * s)) : Math.max(10, Math.round(14 * s));
         ctx.fillStyle = '#00e6ff';
-        ctx.font = 'bold 14px "Press Start 2P", monospace';
+        ctx.font = 'bold ' + keyFs + 'px "Press Start 2P", monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(`${opt.label})`, panelX + 35, oy + 27);
+        ctx.fillText(`${opt.label})`, panelX + Math.round(20 * s), oy + Math.round(optionH / 2 + 3));
 
         // Texto de la opción
+        const optFs = isLandscape ? Math.max(7, Math.round(8 * s)) : Math.max(8, Math.round(11 * s));
         ctx.fillStyle = '#ffffff';
-        ctx.font = '11px "Press Start 2P", monospace';
-        ctx.fillText(opt.text, panelX + 80, oy + 27);
+        ctx.font = optFs + 'px "Press Start 2P", monospace';
+        ctx.fillText(opt.text, panelX + Math.round(60 * s), oy + Math.round(optionH / 2 + 3));
     }
 
     // Instrucción
-    ctx.font = '9px "Press Start 2P", monospace';
+    const footFs = isLandscape ? Math.max(6, Math.round(7 * s)) : Math.max(7, Math.round(9 * s));
+    ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona 1-4 o A-D para responder', cw / 2, panelY + panelH - 10);
+    ctx.fillText('Presiona 1-4 o toca para responder', cw / 2, panelY + panelH - 6);
 }
 
 function drawResultUI() {
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
 
     // Overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     ctx.fillRect(0, 0, cw, ch);
 
-    const panelW = Math.min(500, cw - 40);
-    const panelH = 220;
+    const panelW = Math.min(500, cw - 20);
+    const panelH = Math.min(220, ch - 30);
     const panelX = (cw - panelW) / 2;
     const panelY = (ch - panelH) / 2;
 
@@ -4514,102 +4597,109 @@ function drawResultUI() {
 
     if (gameState.resultCorrect) {
         ctx.strokeStyle = '#00ff88';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = Math.max(2, 3 * s);
         ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-        ctx.font = '32px Arial';
+        ctx.font = Math.max(22, Math.round(32 * s)) + 'px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('✅', cw / 2, panelY + 45);
+        ctx.fillText('✅', cw / 2, panelY + Math.round(40 * s));
 
-        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.font = Math.max(10, Math.round(14 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#00ff88';
-        ctx.fillText('¡CORRECTO!', cw / 2, panelY + 75);
+        ctx.fillText('¡CORRECTO!', cw / 2, panelY + Math.round(68 * s));
 
         // Mostrar pista desbloqueada
-        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ffcc00';
         const clue = gameState.cluesFound[gameState.cluesFound.length - 1];
-        wrapText(ctx, clue, cw / 2, panelY + 110, panelW - 40, 18);
+        wrapText(ctx, clue, cw / 2, panelY + Math.round(95 * s), panelW - 30, Math.max(14, Math.round(18 * s)));
 
-        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#888';
-        ctx.fillText(`Pistas: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, cw / 2, panelY + 175);
+        ctx.fillText(`Pistas: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, cw / 2, panelY + panelH - Math.round(35 * s));
     } else {
         ctx.strokeStyle = '#ff4444';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = Math.max(2, 3 * s);
         ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-        ctx.font = '32px Arial';
+        ctx.font = Math.max(22, Math.round(32 * s)) + 'px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('❌', cw / 2, panelY + 50);
+        ctx.fillText('❌', cw / 2, panelY + Math.round(45 * s));
 
-        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.font = Math.max(10, Math.round(14 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ff4444';
-        ctx.fillText('INCORRECTO', cw / 2, panelY + 80);
+        ctx.fillText('INCORRECTO', cw / 2, panelY + Math.round(75 * s));
 
-        ctx.font = '11px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(11 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('Intenta de nuevo...', cw / 2, panelY + 120);
+        ctx.fillText('Intenta de nuevo...', cw / 2, panelY + Math.round(110 * s));
     }
 
-    ctx.font = '9px "Press Start 2P", monospace';
+    const footFs = Math.max(7, Math.round(9 * s));
+    ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - 15);
+    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - Math.round(12 * s));
 }
 
 function drawFinaleUI() {
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
     ctx.fillRect(0, 0, cw, ch);
 
-    const panelW = Math.min(620, cw - 40);
-    const panelH = 400;
+    const panelW = Math.min(620, cw - 20);
+    const panelH = Math.min(400, ch - 20);
     const panelX = (cw - panelW) / 2;
     const panelY = (ch - panelH) / 2;
 
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(panelX, panelY, panelW, panelH);
     ctx.strokeStyle = '#ffcc00';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, 3 * s);
     ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-    ctx.font = '24px Arial';
+    ctx.font = Math.max(16, Math.round(24 * s)) + 'px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('🏆', cw / 2, panelY + 40);
+    ctx.fillText('🏆', cw / 2, panelY + Math.round(35 * s));
 
-    ctx.font = '16px "Press Start 2P", monospace';
+    ctx.font = Math.max(11, Math.round(16 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffcc00';
-    ctx.fillText('¡CASO RESUELTO!', cw / 2, panelY + 70);
+    ctx.fillText('¡CASO RESUELTO!', cw / 2, panelY + Math.round(62 * s));
 
-    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.font = Math.max(8, Math.round(11 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('Has reunido todas las pistas:', cw / 2, panelY + 100);
+    ctx.fillText('Has reunido todas las pistas:', cw / 2, panelY + Math.round(88 * s));
 
     // Listar pistas
-    ctx.font = '9px "Press Start 2P", monospace';
+    const clueFs = Math.max(7, Math.round(9 * s));
+    const clueLineH = Math.max(10, Math.round(14 * s));
+    const clueGap = Math.max(25, Math.round(35 * s));
+    ctx.font = clueFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#00e6ff';
     ctx.textAlign = 'left';
     for (let i = 0; i < gameState.cluesFound.length; i++) {
         const clueShort = gameState.cluesFound[i].replace('🔍 ', '');
-        wrapText(ctx, clueShort, panelX + 30, panelY + 130 + i * 35, panelW - 60, 14);
+        wrapText(ctx, clueShort, panelX + 20, panelY + Math.round(110 * s) + i * clueGap, panelW - 40, clueLineH);
     }
 
     ctx.textAlign = 'center';
-    ctx.font = '12px "Press Start 2P", monospace';
+    ctx.font = Math.max(9, Math.round(12 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ff4444';
-    ctx.fillText('El asesino es: CARLOS MENDEZ', cw / 2, panelY + panelH - 60);
+    ctx.fillText('El asesino es: CARLOS MENDEZ', cw / 2, panelY + panelH - Math.round(50 * s));
 
-    ctx.font = '9px "Press Start 2P", monospace';
+    const footFs = Math.max(7, Math.round(9 * s));
+    ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - 20);
+    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - Math.round(15 * s));
 }
 
 function drawGameCompleteUI() {
     const cw = canvas.width;
     const ch = canvas.height;
+    const s = Math.min(cw, 800) / 800;
 
     ctx.fillStyle = 'rgba(0,0,0,0.93)';
     ctx.fillRect(0, 0, cw, ch);
@@ -4617,101 +4707,105 @@ function drawGameCompleteUI() {
     // Verificar si perdió
     if (gameState.attempts >= gameState.maxAttempts && gameState.failedSuspects.length > 0) {
         // PANTALLA DE DERROTA
-        ctx.font = '40px Arial';
+        ctx.font = Math.max(28, Math.round(40 * s)) + 'px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('💀', cw / 2, ch / 2 - 80);
+        ctx.fillText('💀', cw / 2, ch / 2 - Math.round(80 * s));
 
-        ctx.font = '18px "Press Start 2P", monospace';
+        ctx.font = Math.max(12, Math.round(18 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ff4444';
-        ctx.fillText('CASO CERRADO', cw / 2, ch / 2 - 30);
+        ctx.fillText('CASO CERRADO', cw / 2, ch / 2 - Math.round(30 * s));
 
-        ctx.font = '11px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(11 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('Has agotado tus intentos', cw / 2, ch / 2 + 10);
+        ctx.fillText('Has agotado tus intentos', cw / 2, ch / 2 + Math.round(10 * s));
 
         ctx.fillStyle = '#ff8888';
-        ctx.fillText('El asesino escapó mientras', cw / 2, ch / 2 + 35);
-        ctx.fillText('perseguías pistas falsas...', cw / 2, ch / 2 + 55);
+        ctx.fillText('El asesino escapó mientras', cw / 2, ch / 2 + Math.round(35 * s));
+        ctx.fillText('perseguías pistas falsas...', cw / 2, ch / 2 + Math.round(55 * s));
 
         const totalSec = Math.floor(gameState.timer / 60);
         const mins = Math.floor(totalSec / 60);
         const secs = totalSec % 60;
-        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = '#888';
-        ctx.fillText(`Tiempo: ${mins}m ${secs.toString().padStart(2, '0')}s`, cw / 2, ch / 2 + 90);
+        ctx.fillText(`Tiempo: ${mins}m ${secs.toString().padStart(2, '0')}s`, cw / 2, ch / 2 + Math.round(85 * s));
 
-        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.font = Math.max(7, Math.round(9 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + 130);
+        ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
         return;
     }
 
     // AQUÍ CONTINÚA TU CÓDIGO ORIGINAL DE VICTORIA
 
-    ctx.font = '28px Arial';
+    ctx.font = Math.max(18, Math.round(28 * s)) + 'px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('🎉', cw / 2, ch / 2 - 60);
+    ctx.fillText('🎉', cw / 2, ch / 2 - Math.round(60 * s));
 
-    ctx.font = '18px "Press Start 2P", monospace';
+    ctx.font = Math.max(12, Math.round(18 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#00ff88';
-    ctx.fillText('¡FELICIDADES!', cw / 2, ch / 2 - 20);
+    ctx.fillText('¡FELICIDADES!', cw / 2, ch / 2 - Math.round(20 * s));
 
-    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.font = Math.max(8, Math.round(11 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('Has resuelto el caso de', cw / 2, ch / 2 + 20);
+    ctx.fillText('Has resuelto el caso de', cw / 2, ch / 2 + Math.round(20 * s));
     ctx.fillStyle = '#00e6ff';
-    ctx.fillText('Murder Cálculo', cw / 2, ch / 2 + 45);
+    ctx.fillText('Murder Cálculo', cw / 2, ch / 2 + Math.round(45 * s));
 
     // Tiempo
     const totalSec = Math.floor(gameState.timer / 60);
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
-    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#888';
-    ctx.fillText(`Tiempo: ${mins}m ${secs.toString().padStart(2, '0')}s`, cw / 2, ch / 2 + 80);
+    ctx.fillText(`Tiempo: ${mins}m ${secs.toString().padStart(2, '0')}s`, cw / 2, ch / 2 + Math.round(80 * s));
 
-    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.font = Math.max(7, Math.round(9 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + 120);
+    ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
 }
 
 function drawProgressHUD() {
+    const cw = canvas.width;
+    const s = Math.min(cw, 800) / 800;
+
     // Barra de progreso de pistas (esquina superior izquierda)
-    const hudX = 10;
-    const hudY = 10;
-    const barW = 160;
-    const barH = 12;
+    const hudX = Math.round(8 * s);
+    const hudY = Math.round(8 * s);
+    const barW = Math.max(120, Math.round(160 * s));
+    const barH = Math.max(8, Math.round(12 * s));
+    const fontSize = Math.max(6, Math.round(8 * s));
 
     // Fondo
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(hudX - 2, hudY - 2, barW + 4, 40);
+    ctx.fillRect(hudX - 2, hudY - 2, barW + 4, Math.round(40 * s));
 
     // Etiqueta
-    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.font = fontSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#ffcc00';
     ctx.textAlign = 'left';
-    ctx.fillText(`PISTAS: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, hudX + 4, hudY + 10);
+    ctx.fillText(`PISTAS: ${gameState.riddlesSolved}/${gameState.totalRiddles}`, hudX + 4, hudY + Math.round(10 * s));
 
     // Barra de progreso
     ctx.fillStyle = '#333';
-    ctx.fillRect(hudX + 4, hudY + 18, barW - 8, barH);
+    ctx.fillRect(hudX + 4, hudY + Math.round(16 * s), barW - 8, barH);
 
     const fillW = ((barW - 8) * gameState.riddlesSolved) / gameState.totalRiddles;
     ctx.fillStyle = gameState.riddlesSolved >= gameState.totalRiddles ? '#00ff88' : '#00e6ff';
-    ctx.fillRect(hudX + 4, hudY + 18, fillW, barH);
+    ctx.fillRect(hudX + 4, hudY + Math.round(16 * s), fillW, barH);
 
     ctx.strokeStyle = '#00e6ff';
     ctx.lineWidth = 1;
-    ctx.strokeRect(hudX + 4, hudY + 18, barW - 8, barH);
+    ctx.strokeRect(hudX + 4, hudY + Math.round(16 * s), barW - 8, barH);
 
     // Timer (esquina superior izq, debajo de pistas)
     gameState.timer++;
     const totalSec = Math.floor(gameState.timer / 60);
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
-    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.font = fontSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = mins >= 25 ? '#ff4444' : '#aaa';
-    ctx.fillText(`⏱ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`, hudX + 4, hudY + 48);
+    ctx.fillText(`⏱ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`, hudX + 4, hudY + Math.round(36 * s));
 }
 
 function wrapText(context, text, x, y, maxWidth, lineHeight) {

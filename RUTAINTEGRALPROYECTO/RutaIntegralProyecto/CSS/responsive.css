@@ -86,4 +86,197 @@
     }
     
     .tap-indicator span {
-        font-size: 0.7rem;\n    }\n    \n    /* Ajustar controles */\n    .game-mode {\n        padding: 15px;\n    }\n    \n    .mode-selector {\n        flex-direction: row;\n        gap: 10px;\n    }\n    \n    .mode-btn {\n        flex: 1;\n        padding: 10px;\n        font-size: 0.6rem;\n    }\n    \n    .action-buttons {\n        flex-direction: row;\n        gap: 10px;\n    }\n    \n    .start-btn,\n    .info-btn {\n        flex: 1;\n        padding: 12px 20px;\n        font-size: 0.7rem;\n    }\n    \n    /* Modal responsive */\n    .modal-content {\n        width: 95%;\n        margin: 10px;\n    }\n    \n    .modal-header {\n        padding: 15px 20px;\n    }\n    \n    .modal-header h2 {\n        font-size: 1rem;\n    }\n    \n    .characters-grid {\n        grid-template-columns: repeat(2, 1fr);\n        gap: 15px;\n        padding: 20px;\n    }\n    \n    .character-card {\n        padding: 15px;\n    }\n    \n    .character-preview {\n        font-size: 2.5rem;\n        margin-bottom: 10px;\n    }\n    \n    .character-card h4 {\n        font-size: 0.7rem;\n        line-height: 1.2;\n    }\n    \n    .character-card p {\n        font-size: 0.7rem;\n    }\n    \n    .modal-footer {\n        padding: 15px 20px;\n    }\n    \n    .confirm-btn {\n        padding: 12px 30px;\n        font-size: 0.8rem;\n    }\n}\n\n/* Móviles muy pequeños */\n@media (max-width: 480px) {\n    .game-title {\n        font-size: 1.2rem;\n    }\n    \n    .character-platform {\n        width: 120px;\n        height: 120px;\n    }\n    \n    .character-model {\n        width: 90px;\n        height: 90px;\n    }\n    \n    .character-avatar {\n        font-size: 2rem;\n    }\n    \n    .info-panel {\n        flex-direction: column;\n        gap: 10px;\n    }\n    \n    .level-info h2 {\n        font-size: 1rem;\n    }\n    \n    .character-info h3 {\n        font-size: 0.8rem;\n    }\n    \n    .characters-grid {\n        grid-template-columns: 1fr;\n        gap: 10px;\n        padding: 15px;\n    }\n    \n    .modal-header h2 {\n        font-size: 0.9rem;\n    }\n    \n    .tap-indicator span {\n        font-size: 0.6rem;\n    }\n}\n\n/* Landscape en móviles */\n@media (max-height: 500px) and (orientation: landscape) {\n    .character-select-container {\n        height: auto;\n        min-height: 100vh;\n        padding: 10px 0;\n    }\n    \n    .game-header {\n        padding: 10px;\n    }\n    \n    .game-title {\n        font-size: 1.2rem;\n        margin-bottom: 10px;\n    }\n    \n    .selection-area {\n        display: grid;\n        grid-template-columns: 1fr 200px 1fr;\n        grid-template-rows: auto auto;\n        gap: 15px;\n        padding: 10px;\n    }\n    \n    .character-display {\n        grid-column: 2;\n        grid-row: 1;\n        padding: 10px 0;\n    }\n    \n    .info-panel {\n        grid-column: 1;\n        grid-row: 1;\n        gap: 10px;\n    }\n    \n    .controls-panel {\n        grid-column: 3;\n        grid-row: 1;\n        gap: 10px;\n    }\n    \n    .character-platform {\n        width: 100px;\n        height: 100px;\n    }\n    \n    .character-model {\n        width: 80px;\n        height: 80px;\n    }\n    \n    .character-avatar {\n        font-size: 2rem;\n    }\n    \n    .level-info,\n    .character-info,\n    .game-mode {\n        padding: 10px;\n    }\n    \n    .modal-content {\n        max-height: 95vh;\n    }\n}
+        font-size: 0.7rem;
+    }
+    
+    /* Ajustar controles */
+    .game-mode {
+        padding: 15px;
+    }
+    
+    .mode-selector {
+        flex-direction: row;
+        gap: 10px;
+    }
+    
+    .mode-btn {
+        flex: 1;
+        padding: 10px;
+        font-size: 0.6rem;
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+        gap: 10px;
+    }
+    
+    .start-btn,
+    .info-btn {
+        flex: 1;
+        padding: 12px 20px;
+        font-size: 0.7rem;
+    }
+    
+    /* Modal responsive */
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1rem;
+    }
+    
+    .characters-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 20px;
+    }
+    
+    .character-card {
+        padding: 15px;
+    }
+    
+    .character-preview {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .character-card h4 {
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+    
+    .character-card p {
+        font-size: 0.7rem;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+    }
+    
+    .confirm-btn {
+        padding: 12px 30px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 480px) {
+    .game-title {
+        font-size: 1.2rem;
+    }
+    
+    .character-platform {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .character-model {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .character-avatar {
+        font-size: 2rem;
+    }
+    
+    .info-panel {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .level-info h2 {
+        font-size: 1rem;
+    }
+    
+    .character-info h3 {
+        font-size: 0.8rem;
+    }
+    
+    .characters-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .modal-header h2 {
+        font-size: 0.9rem;
+    }
+    
+    .tap-indicator span {
+        font-size: 0.6rem;
+    }
+}
+
+/* Landscape en móviles */
+@media (max-height: 500px) and (orientation: landscape) {
+    .character-select-container {
+        height: auto;
+        min-height: 100vh;
+        padding: 10px 0;
+    }
+    
+    .game-header {
+        padding: 10px;
+    }
+    
+    .game-title {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .selection-area {
+        display: grid;
+        grid-template-columns: 1fr 200px 1fr;
+        grid-template-rows: auto auto;
+        gap: 15px;
+        padding: 10px;
+    }
+    
+    .character-display {
+        grid-column: 2;
+        grid-row: 1;
+        padding: 10px 0;
+    }
+    
+    .info-panel {
+        grid-column: 1;
+        grid-row: 1;
+        gap: 10px;
+    }
+    
+    .controls-panel {
+        grid-column: 3;
+        grid-row: 1;
+        gap: 10px;
+    }
+    
+    .character-platform {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .character-model {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .character-avatar {
+        font-size: 2rem;
+    }
+    
+    .level-info,
+    .character-info,
+    .game-mode {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-height: 95vh;
+    }
+}
