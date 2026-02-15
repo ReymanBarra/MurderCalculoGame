@@ -47,6 +47,71 @@ const charImgPaths = {
 playerImg.src = charImgPaths[selectedCharId] || charImgPaths['estudiante'];
 
 // ============================
+// CARGAR SPRITES DE CONTROLES MÓVILES
+// ============================
+const ctrlBasePath = '../assets/img/controls/Sprites/Style%20A/Default/';
+const ctrlIconPath = '../assets/img/controls/Sprites/Icons/Default/';
+
+const imgJoystickPad = new Image();
+imgJoystickPad.src = ctrlBasePath + 'joystick_circle_pad_a.png';
+imgJoystickPad.onerror = () => console.warn('⚠️ No se pudo cargar joystick pad');
+const imgJoystickNub = new Image();
+imgJoystickNub.src = ctrlBasePath + 'joystick_circle_nub_a.png';
+imgJoystickNub.onerror = () => console.warn('⚠️ No se pudo cargar joystick nub');
+const imgActionBtn = new Image();
+imgActionBtn.src = ctrlBasePath + 'button_circle.png';
+imgActionBtn.onerror = () => console.warn('⚠️ No se pudo cargar action button');
+const imgIconSearch = new Image();
+imgIconSearch.src = ctrlIconPath + 'icon_search.png';
+imgIconSearch.onerror = () => console.warn('⚠️ No se pudo cargar icon search');
+const imgIconTalk = new Image();
+imgIconTalk.src = ctrlIconPath + 'icon_talk.png';
+imgIconTalk.onerror = () => console.warn('⚠️ No se pudo cargar icon talk');
+
+// Estado del joystick y botón de acción
+const mobileControls = {
+    isTouchDevice: false,
+    // Joystick
+    joystick: {
+        active: false,
+        touchId: null,
+        centerX: 0,
+        centerY: 0,
+        nubX: 0,
+        nubY: 0,
+        dirX: 0,
+        dirY: 0,
+        radius: 50,
+        size: 130
+    },
+    // Botón de acción
+    actionBtn: {
+        touchId: null,
+        pressed: false,
+        x: 0,
+        y: 0,
+        size: 80
+    },
+    moveTimer: 0,
+    moveDelay: 8
+};
+
+// Detectar dispositivo touch de forma agresiva
+function detectTouchDevice() {
+    if ('ontouchstart' in window) return true;
+    if (navigator.maxTouchPoints > 0) return true;
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    if (/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) return true;
+    return false;
+}
+mobileControls.isTouchDevice = detectTouchDevice();
+// También activar al primer touch
+window.addEventListener('touchstart', function onFirstTouch() {
+    mobileControls.isTouchDevice = true;
+    window.removeEventListener('touchstart', onFirstTouch);
+}, { passive: true });
+
+// ============================
 // CÁMARA
 // ============================
 const camera = {
@@ -729,8 +794,8 @@ canvas.addEventListener('click', (e) => {
     if (gameState.activeRiddle !== null) {
         // Detectar click en opciones
         const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
         const cw = canvas.width;
         const ch = canvas.height;
         const panelW = Math.min(600, cw - 40);
@@ -774,6 +839,20 @@ function handleInput() {
     } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
         player.tryMove(1, 0);
         moveTimer = MOVE_DELAY;
+    }
+    // Movimiento con joystick móvil
+    else if (mobileControls.joystick.active) {
+        const js = mobileControls.joystick;
+        if (js.dirX !== 0 || js.dirY !== 0) {
+            if (mobileControls.moveTimer <= 0) {
+                player.tryMove(js.dirX, js.dirY);
+                mobileControls.moveTimer = mobileControls.moveDelay;
+            } else {
+                mobileControls.moveTimer--;
+            }
+        }
+    } else {
+        mobileControls.moveTimer = 0;
     }
 
     // Chequear si el jugador pisó un marcador de evidencia
@@ -1471,31 +1550,264 @@ function closeResult() {
 // ============================
 // CONTROLES TÁCTILES
 // ============================
-let touchStartX = 0;
-let touchStartY = 0;
+// ============================
+// CONTROLES TÁCTILES (Joystick + Botón Acción)
+// ============================
+function canvasTouchPos(touch) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+        y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+    };
+}
+
+function isInJoystickZone(tx, ty) {
+    const js = mobileControls.joystick;
+    const dx = tx - js.centerX;
+    const dy = ty - js.centerY;
+    return Math.sqrt(dx * dx + dy * dy) < js.size;
+}
+
+function isInActionBtnZone(tx, ty) {
+    const ab = mobileControls.actionBtn;
+    const cx = ab.x + ab.size / 2;
+    const cy = ab.y + ab.size / 2;
+    const dx = tx - cx;
+    const dy = ty - cy;
+    return Math.sqrt(dx * dx + dy * dy) < ab.size;
+}
+
+function updateJoystickNub(tx, ty) {
+    const js = mobileControls.joystick;
+    const dx = tx - js.centerX;
+    const dy = ty - js.centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > js.radius) {
+        // Limitar al radio máximo
+        js.nubX = js.centerX + (dx / dist) * js.radius;
+        js.nubY = js.centerY + (dy / dist) * js.radius;
+    } else {
+        js.nubX = tx;
+        js.nubY = ty;
+    }
+
+    // Calcular dirección normalizada
+    const deadzone = 15;
+    if (dist < deadzone) {
+        js.dirX = 0;
+        js.dirY = 0;
+    } else {
+        // Determinar dirección cardinal dominante
+        if (Math.abs(dx) > Math.abs(dy)) {
+            js.dirX = dx > 0 ? 1 : -1;
+            js.dirY = 0;
+        } else {
+            js.dirX = 0;
+            js.dirY = dy > 0 ? 1 : -1;
+        }
+    }
+}
+
+function triggerActionButton() {
+    // Si hay diálogo abierto, cerrarlo
+    if (gameState.showingDialogue) {
+        closeDialogue();
+        return;
+    }
+    // Si hay resultado de acertijo, cerrarlo
+    if (gameState.showingResult) {
+        closeResult();
+        return;
+    }
+    // Si hay acertijo activo, no hacer nada (se selecciona con tap directo en opciones)
+    if (gameState.activeRiddle !== null) {
+        return;
+    }
+    // Si hay resultado de acusación incorrecto, cerrarlo
+    if (gameState.showingAccusation && gameState.accusationResult === false) {
+        closeAccusationResult();
+        return;
+    }
+    // Si hay acusación activa (seleccionando sospechoso), no hacer nada (se selecciona con tap en tarjetas)
+    if (gameState.showingAccusation) {
+        return;
+    }
+    // Si hay finale
+    if (gameState.showingFinale) {
+        gameState.showingFinale = false;
+        gameState.gameComplete = true;
+        return;
+    }
+    // Si game complete
+    if (gameState.gameComplete) {
+        window.location.href = '../index.html';
+        return;
+    }
+    // Si victory y pasaron 7 segundos
+    if (gameState.showingVictory) {
+        const ve = (Date.now() - gameState.victoryStartTime) / 1000;
+        if (ve > 7) window.location.href = '../index.html';
+        return;
+    }
+    // Interacción normal: intentar NPC primero, luego dirección
+    if (tryInteractWithNearbyNPC()) return;
+    const front = getFrontTile(player.x, player.y, player.direction);
+    handleInteraction(front.x, front.y);
+}
+
+// Manejar taps en pantalla para UI (acertijos, acusación, diálogos, etc.)
+function handleScreenTap(tapX, tapY) {
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    // Victoria
+    if (gameState.showingVictory) {
+        const ve = (Date.now() - gameState.victoryStartTime) / 1000;
+        if (ve > 7) window.location.href = '../index.html';
+        return;
+    }
+
+    // Acusación
+    if (gameState.showingAccusation) {
+        if (gameState.accusationResult === false) {
+            closeAccusationResult();
+            return;
+        }
+        if (gameState.accusationResult !== null) return;
+        // Tap en tarjetas de sospechosos
+        if (gameState._accusationCards) {
+            for (const card of gameState._accusationCards) {
+                if (tapX >= card.x && tapX <= card.x + card.w && tapY >= card.y && tapY <= card.y + card.h) {
+                    selectAccusationOption(card.index);
+                    return;
+                }
+            }
+        }
+        return;
+    }
+
+    // Finale
+    if (gameState.showingFinale) {
+        gameState.showingFinale = false;
+        gameState.gameComplete = true;
+        return;
+    }
+
+    // Game complete
+    if (gameState.gameComplete) {
+        window.location.href = '../index.html';
+        return;
+    }
+
+    // Resultado de acertijo
+    if (gameState.showingResult) {
+        closeResult();
+        return;
+    }
+
+    // Diálogo
+    if (gameState.showingDialogue) {
+        // Verificar si tap en X para cerrar
+        const panelW = Math.min(720, cw - 30);
+        const panelH = Math.min(420, ch - 40);
+        const panelX = (cw - panelW) / 2;
+        const panelY = (ch - panelH) / 2;
+        const xSize = 32;
+        const xPad = 14;
+        const xRectX = panelX + panelW - xSize - xPad;
+        const xRectY = panelY + xPad;
+        if (tapX >= xRectX && tapX <= xRectX + xSize && tapY >= xRectY && tapY <= xRectY + xSize) {
+            closeDialogue();
+        }
+        return;
+    }
+
+    // Acertijo activo - seleccionar opción
+    if (gameState.activeRiddle !== null) {
+        const panelW = Math.min(600, cw - 40);
+        const panelX = (cw - panelW) / 2;
+        const optionStartY = ch / 2 - 20;
+        const optionH = 45;
+
+        for (let i = 0; i < 4; i++) {
+            const oy = optionStartY + i * optionH;
+            if (tapX >= panelX + 20 && tapX <= panelX + panelW - 20 &&
+                tapY >= oy && tapY <= oy + optionH - 5) {
+                selectRiddleOption(i);
+                return;
+            }
+        }
+    }
+}
 
 canvas.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
     e.preventDefault();
+    for (const touch of e.changedTouches) {
+        const pos = canvasTouchPos(touch);
+
+        // Joystick
+        if (!mobileControls.joystick.active && isInJoystickZone(pos.x, pos.y)) {
+            const js = mobileControls.joystick;
+            js.active = true;
+            js.touchId = touch.identifier;
+            updateJoystickNub(pos.x, pos.y);
+            continue;
+        }
+
+        // Botón de acción
+        if (isInActionBtnZone(pos.x, pos.y)) {
+            mobileControls.actionBtn.touchId = touch.identifier;
+            mobileControls.actionBtn.pressed = true;
+            triggerActionButton();
+            continue;
+        }
+
+        // Si el touch NO fue en joystick ni action, simular click para UI (acertijos, acusación, etc.)
+        handleScreenTap(pos.x, pos.y);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+        if (touch.identifier === mobileControls.joystick.touchId) {
+            const pos = canvasTouchPos(touch);
+            updateJoystickNub(pos.x, pos.y);
+        }
+    }
 }, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartX;
-    const dy = touch.clientY - touchStartY;
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
-
-    if (Math.max(absDx, absDy) < 10) return; // Ignorar taps muy pequeños
-
-    if (absDx > absDy) {
-        player.tryMove(dx > 0 ? 1 : -1, 0);
-    } else {
-        player.tryMove(0, dy > 0 ? 1 : -1);
-    }
     e.preventDefault();
+    for (const touch of e.changedTouches) {
+        // Soltar joystick
+        if (touch.identifier === mobileControls.joystick.touchId) {
+            const js = mobileControls.joystick;
+            js.active = false;
+            js.touchId = null;
+            js.nubX = js.centerX;
+            js.nubY = js.centerY;
+            js.dirX = 0;
+            js.dirY = 0;
+        }
+        // Soltar botón de acción
+        if (touch.identifier === mobileControls.actionBtn.touchId) {
+            mobileControls.actionBtn.touchId = null;
+            mobileControls.actionBtn.pressed = false;
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', (e) => {
+    // Reset todo al cancelar
+    const js = mobileControls.joystick;
+    js.active = false;
+    js.touchId = null;
+    js.dirX = 0;
+    js.dirY = 0;
+    mobileControls.actionBtn.touchId = null;
+    mobileControls.actionBtn.pressed = false;
 }, { passive: false });
 
 // ============================
@@ -3581,6 +3893,7 @@ function render() {
     // 🔴 SI HAY DIÁLOGO, SOLO DIBUJA ESO
     if (gameState.showingDialogue) {
         drawDialogueUI();
+        drawMobileControls();
         return;
     }
 
@@ -3649,6 +3962,9 @@ function render() {
     if (gameState.gameComplete) {
         drawGameCompleteUI();
     }
+
+    // SIEMPRE dibujar controles móviles encima de todo
+    drawMobileControls();
 }
 
 function drawNPCs() {
@@ -3854,8 +4170,7 @@ function onCanvasPointer(e) {
 }
 
 canvas.addEventListener('click', onCanvasPointer);
-canvas.addEventListener('touchstart', (e) => onCanvasPointer(e.touches[0]), { passive: false });
-
+// En mobile, handleScreenTap ya maneja el cierre de diálogos
 
 
 
@@ -3868,6 +4183,8 @@ function drawUI() {
     // === Panel de diálogo (si está abierto) ===
     if (gameState.showingDialogue) {
         drawDialogueUI();
+        // Dibujar controles móviles encima del diálogo también
+        drawMobileControls();
         return; // IMPORTANTE: no dibujar el mensaje pequeño debajo
     }
 
@@ -3898,11 +4215,13 @@ function drawUI() {
     // Controles en pantalla (para móvil)
     drawMobileControls();
 
-    // Instrucciones
-    ctx.font = '10px "Press Start 2P", monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.textAlign = 'left';
-    ctx.fillText('WASD / Flechas para moverse', 10, canvas.height - 10);
+    // Instrucciones (ocultar en móvil para dar espacio)
+    if (!mobileControls.isTouchDevice) {
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.textAlign = 'left';
+        ctx.fillText('WASD / Flechas para moverse', 10, canvas.height - 10);
+    }
 }
 
 function drawMinimap() {
@@ -3957,39 +4276,142 @@ function drawMinimap() {
 }
 
 function drawMobileControls() {
-    // Solo mostrar en pantallas pequeñas (o touch)
-    if (!('ontouchstart' in window)) return;
+    if (!mobileControls.isTouchDevice) return;
 
-    const btnSize = 50;
-    const padding = 20;
-    const centerX = padding + btnSize + 5;
-    const centerY = canvas.height - padding - btnSize - 5;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const js = mobileControls.joystick;
+    const ab = mobileControls.actionBtn;
 
-    ctx.globalAlpha = 0.4;
+    // Posiciones dinámicas
+    const padding = 30;
+    js.centerX = padding + js.size / 2;
+    js.centerY = ch - padding - js.size / 2;
+    ab.x = cw - padding - ab.size;
+    ab.y = ch - padding - ab.size;
 
-    // Arriba
-    drawControlButton(centerX, centerY - btnSize - 5, btnSize, '▲');
-    // Abajo
-    drawControlButton(centerX, centerY + btnSize + 5, btnSize, '▼');
-    // Izquierda
-    drawControlButton(centerX - btnSize - 5, centerY, btnSize, '◀');
-    // Derecha
-    drawControlButton(centerX + btnSize + 5, centerY, btnSize, '▶');
+    // === JOYSTICK ===
+    ctx.save();
+    ctx.globalAlpha = 0.45;
 
-    ctx.globalAlpha = 1;
+    // Base del joystick (imagen o fallback)
+    if (imgJoystickPad.complete && imgJoystickPad.naturalWidth > 0) {
+        ctx.drawImage(imgJoystickPad,
+            js.centerX - js.size / 2,
+            js.centerY - js.size / 2,
+            js.size, js.size);
+    } else {
+        // Fallback: círculo oscuro
+        ctx.beginPath();
+        ctx.arc(js.centerX, js.centerY, js.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(30, 30, 50, 0.9)';
+        ctx.fill();
+        ctx.strokeStyle = '#00e6ff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    // Nub del joystick
+    const nubSize = js.size * 0.4;
+    const nubDrawX = js.active ? js.nubX : js.centerX;
+    const nubDrawY = js.active ? js.nubY : js.centerY;
+    ctx.globalAlpha = js.active ? 0.8 : 0.5;
+
+    if (imgJoystickNub.complete && imgJoystickNub.naturalWidth > 0) {
+        ctx.drawImage(imgJoystickNub,
+            nubDrawX - nubSize / 2,
+            nubDrawY - nubSize / 2,
+            nubSize, nubSize);
+    } else {
+        // Fallback: círculo claro
+        ctx.beginPath();
+        ctx.arc(nubDrawX, nubDrawY, nubSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#557799';
+        ctx.fill();
+        ctx.strokeStyle = '#aaccff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // Cruces direccionales sutiles en la base
+    if (!js.active) {
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#ffffff';
+        const arrowLen = 10;
+        const arrowDist = js.size * 0.28;
+        // Arriba
+        ctx.beginPath();
+        ctx.moveTo(js.centerX, js.centerY - arrowDist - arrowLen);
+        ctx.lineTo(js.centerX - 6, js.centerY - arrowDist);
+        ctx.lineTo(js.centerX + 6, js.centerY - arrowDist);
+        ctx.fill();
+        // Abajo
+        ctx.beginPath();
+        ctx.moveTo(js.centerX, js.centerY + arrowDist + arrowLen);
+        ctx.lineTo(js.centerX - 6, js.centerY + arrowDist);
+        ctx.lineTo(js.centerX + 6, js.centerY + arrowDist);
+        ctx.fill();
+        // Izquierda
+        ctx.beginPath();
+        ctx.moveTo(js.centerX - arrowDist - arrowLen, js.centerY);
+        ctx.lineTo(js.centerX - arrowDist, js.centerY - 6);
+        ctx.lineTo(js.centerX - arrowDist, js.centerY + 6);
+        ctx.fill();
+        // Derecha
+        ctx.beginPath();
+        ctx.moveTo(js.centerX + arrowDist + arrowLen, js.centerY);
+        ctx.lineTo(js.centerX + arrowDist, js.centerY - 6);
+        ctx.lineTo(js.centerX + arrowDist, js.centerY + 6);
+        ctx.fill();
+    }
+
+    // === BOTÓN DE ACCIÓN ===
+    ctx.globalAlpha = ab.pressed ? 0.85 : 0.5;
+
+    if (imgActionBtn.complete && imgActionBtn.naturalWidth > 0) {
+        ctx.drawImage(imgActionBtn, ab.x, ab.y, ab.size, ab.size);
+    } else {
+        // Fallback: círculo
+        ctx.beginPath();
+        ctx.arc(ab.x + ab.size / 2, ab.y + ab.size / 2, ab.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = ab.pressed ? '#cc4444' : 'rgba(200, 50, 50, 0.7)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff6666';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    // Icono/Letra dentro del botón
+    const iconSize = ab.size * 0.45;
+    const iconCX = ab.x + ab.size / 2;
+    const iconCY = ab.y + ab.size / 2;
+    const nearNpc = isPlayerNearNPC();
+    const iconImg = nearNpc ? imgIconTalk : imgIconSearch;
+
+    if (iconImg.complete && iconImg.naturalWidth > 0) {
+        ctx.globalAlpha = ab.pressed ? 1.0 : 0.7;
+        ctx.drawImage(iconImg, iconCX - iconSize / 2, iconCY - iconSize / 2, iconSize, iconSize);
+    } else {
+        // Fallback: letra E
+        ctx.globalAlpha = ab.pressed ? 1.0 : 0.8;
+        ctx.font = 'bold 24px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('E', iconCX, iconCY);
+        ctx.textBaseline = 'alphabetic';
+    }
+
+    ctx.restore();
 }
 
-function drawControlButton(x, y, size, label) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(x, y, size, size);
-    ctx.strokeStyle = '#00e6ff';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, size, size);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '18px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(label, x + size / 2, y + size / 2 + 6);
+function isPlayerNearNPC() {
+    if (!window.npcs) return false;
+    for (const npc of window.npcs) {
+        const dist = Math.abs(player.x - npc.x) + Math.abs(player.y - npc.y);
+        if (dist <= 2) return true;
+    }
+    return false;
 }
 
 // ============================
