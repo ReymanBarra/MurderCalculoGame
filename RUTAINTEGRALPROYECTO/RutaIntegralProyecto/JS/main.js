@@ -7,10 +7,10 @@ const imgBase = 'assets/img/personajes/';
 const characters = {
     'estudiante': { name: 'Estudiante Básico', description: 'Personaje ideal para comenzar tu aventura matemática', img: imgBase + 'Male person/PNG/Poses/character_malePerson_idle.png' },
     'matematico': { name: 'Matemático', description: 'Experto en cálculos y fórmulas avanzadas', img: imgBase + 'Female person/PNG/Poses/character_femalePerson_idle.png' },
-    'ingeniero':  { name: 'Ingeniero', description: 'Resuelve problemas complejos con precisión', img: imgBase + 'Male adventurer/PNG/Poses/character_maleAdventurer_idle.png' },
+    'ingeniero': { name: 'Ingeniero', description: 'Resuelve problemas complejos con precisión', img: imgBase + 'Male adventurer/PNG/Poses/character_maleAdventurer_idle.png' },
     'cientifico': { name: 'Científico', description: 'Maestro de las fórmulas y ecuaciones', img: imgBase + 'Female adventurer/PNG/Poses/character_femaleAdventurer_idle.png' },
-    'genio':      { name: 'Genio Matemático', description: 'El maestro supremo de las matemáticas', img: imgBase + 'Zombie/PNG/Poses/character_zombie_idle.png' },
-    'robot':      { name: 'IA Calculator', description: 'Inteligencia artificial matemática', img: imgBase + 'Robot/PNG/Poses/character_robot_idle.png' }
+    'genio': { name: 'Genio Matemático', description: 'El maestro supremo de las matemáticas', img: imgBase + 'Zombie/PNG/Poses/character_zombie_idle.png' },
+    'robot': { name: 'IA Calculator', description: 'Inteligencia artificial matemática', img: imgBase + 'Robot/PNG/Poses/character_robot_idle.png' }
 };
 
 // Referencias DOM
@@ -50,7 +50,7 @@ function setupEventListeners() {
     if (btnStart) {
         btnStart.addEventListener("click", (e) => {
             e.preventDefault();
-            
+
             // Ejecución del efecto de sonido
             startSfx.play().catch(err => console.error("Error de audio inicial:", err));
 
@@ -108,7 +108,7 @@ function setupEventListeners() {
                 selectedCharacter = characterId;
                 updateCharacterDisplay();
                 closeCharacterModal();
-                
+
                 // Efecto visual de confirmación
                 showSelectionFeedback();
             }
@@ -123,7 +123,7 @@ function setupEventListeners() {
             characterCards.forEach(c => c.classList.remove('selected'));
             // Agregar selección actual
             card.classList.add('selected');
-            
+
             // Habilitar botón de confirmación
             if (confirmSelection) {
                 confirmSelection.style.opacity = '1';
@@ -140,7 +140,7 @@ function openCharacterModal() {
         characterModal.classList.remove('hidden');
         characterModal.classList.add('flex');
         console.log('Modal activado');
-        
+
         // Marcar personaje actual como seleccionado
         const currentCard = document.querySelector(`[data-character="${selectedCharacter}"]`);
         if (currentCard) {
@@ -161,12 +161,12 @@ function closeCharacterModal() {
     if (characterModal) {
         characterModal.classList.add('hidden');
         characterModal.classList.remove('flex');
-        
+
         // Limpiar selecciones
         document.querySelectorAll('.character-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         if (confirmSelection) {
             confirmSelection.style.opacity = '0.5';
             confirmSelection.style.pointerEvents = 'none';
@@ -180,7 +180,7 @@ function showSelectionFeedback() {
     if (platform) {
         platform.style.transform = 'scale(1.2)';
         platform.style.boxShadow = '0 0 50px rgba(0, 198, 255, 0.8)';
-        
+
         setTimeout(() => {
             platform.style.transform = 'scale(1)';
             platform.style.boxShadow = '0 0 30px rgba(0, 198, 255, 0.4)';
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('characterModal')) {
         initializeCharacterScreen();
     }
-    
+
     // Botón de volver (funciona en cualquier página)
     const btnBack = document.getElementById("btnBack");
     if (btnBack) {
@@ -203,3 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("../service-worker.js")
+    .then(() => console.log("Service Worker registrado"))
+    .catch(err => console.error("Error SW:", err));
+}
+
