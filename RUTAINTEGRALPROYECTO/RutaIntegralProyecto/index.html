@@ -3,29 +3,37 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- VIEWPORT (UNO SOLO, optimizado para iOS) -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
   <title>Murder Cálculo</title>
 
-  <!-- Tailwind CSS -->
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Murder Cálculo">
+
+  <!-- Theme -->
+  <meta name="theme-color" content="#000000">
+
+  <!-- Icon iOS -->
+  <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
+
+  <!-- Manifest -->
+  <link rel="manifest" href="../manifest.json">
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Google Font Retro -->
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-  <!-- Estilos custom (solo animaciones) -->
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="CSS/custom.css" />
-
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#000000">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- iOS -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
-<meta http-equiv="refresh" content="0; url=Pages/index.html">
-
 </head>
+
 
 <body class="starfield-bg min-h-screen text-white overflow-x-hidden">
 
