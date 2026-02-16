@@ -2,37 +2,31 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
 
-  <!-- VIEWPORT (UNO SOLO, optimizado para iOS) -->
   <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
   <title>Murder Cálculo</title>
 
-  <!-- iOS PWA -->
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+
+  <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Murder Cálculo">
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 
-  <!-- Theme -->
-  <meta name="theme-color" content="#000000">
-
-  <!-- Icon iOS -->
-  <link rel="apple-touch-icon" href="../assets/img/icon-192.png">
-
-  <!-- Manifest -->
-  <link rel="manifest" href="../manifest.json">
+  <!-- Fonts & CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="CSS/custom.css">
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="CSS/custom.css" />
 </head>
+
 
 
 <body class="starfield-bg min-h-screen text-white overflow-x-hidden">
