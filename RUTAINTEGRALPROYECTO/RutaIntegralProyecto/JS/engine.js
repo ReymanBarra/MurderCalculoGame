@@ -298,6 +298,12 @@ function handleInteraction(x, y) {
                             interactionTimer = 180;
                             return false;
                         }
+                        // Verificar si está bloqueada por acusación incorrecta
+                        if (gameState.crimeSceneBlocked) {
+                            interactionMessage = '🚫 La escena está vedada hasta resolver el misterio';
+                            interactionTimer = 180;
+                            return false;
+                        }
                         enterInterior('crimeScene');
                         // Colocar marcador de acusación en la silueta de tiza
                         setTimeout(() => {
@@ -984,6 +990,7 @@ function selectAccusationOption(optionIndex) {
         gameState.attempts++;
         gameState.failedSuspects.push(selectedSuspect.id);
         gameState.lastWrongSuspect = selectedSuspect.name;
+        gameState.crimeSceneBlocked = true; // 🔒 Bloquear escena del crimen
         
         // Reproducir sonido de error
         errorSound.currentTime = 0;
@@ -1574,6 +1581,12 @@ function selectRiddleOption(optionIndex) {
         gameState.riddlesSolved++;
         gameState.cluesFound.push(riddle.clueText);
         gameState.resultCorrect = true;
+        
+        // 🔓 Si es la pista final (id 7), desbloquear la escena del crimen
+        if (riddle.id === 7) {
+            gameState.crimeSceneBlocked = false;
+        }
+        
         // Quitar marcador del mapa
         mapObjects[riddle.y][riddle.x] = T.EMPTY;
         

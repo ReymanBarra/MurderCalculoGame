@@ -720,6 +720,7 @@ const gameState = {
     finalClueUnlocked: false,
     needsNpcGuidance: false,
     lastWrongSuspect: '',
+    crimeSceneBlocked: false, // Bloquea entrada a escena del crimen cuando acusación es incorrecta
     suspects: [
         { id: 'carlos', name: 'CARLOS MENDEZ', isKiller: true },
         { id: 'pedro', name: 'PEDRO RAMIREZ', isKiller: false },
