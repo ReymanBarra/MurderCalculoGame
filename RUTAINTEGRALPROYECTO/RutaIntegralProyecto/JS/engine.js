@@ -1191,7 +1191,7 @@ function drawVictoryAnimation() {
         const btnPulse = (Math.sin(elapsed * 3) + 1) / 2;
         ctx.font = Math.max(8, Math.round(10 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = `rgba(255, 255, 255, ${0.4 + btnPulse * 0.4})`;
-        ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch * 0.95);
+        ctx.fillText('Toca para volver al menú', cw / 2, ch * 0.95);
 
         ctx.globalAlpha = 1;
     }
@@ -1248,7 +1248,7 @@ function drawAccusationUI() {
         wrapText(ctx, 'Revisa las pistas de nuevo y piensa bien... ¿Quién es el verdadero asesino?', cw / 2, panelY + 130, panelW - 60, 20);
         ctx.font = '9px "Press Start 2P", monospace';
         ctx.fillStyle = '#aaa';
-        ctx.fillText('Presiona ENTER para intentar de nuevo', cw / 2, panelY + panelH - 20);
+        ctx.fillText('Toca para intentar de nuevo', cw / 2, panelY + panelH - 20);
         return;
     }
 
@@ -1331,7 +1331,7 @@ function drawAccusationUI() {
     ctx.font = '8px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'center';
-    ctx.fillText('Click o presiona 1-3 / A-C para acusar', cw / 2, panelY + panelH - 8);
+    ctx.fillText('Toca para acusar', cw / 2, panelY + panelH - 8);
 }
 
 // === CARLOS MÉNDEZ: Ropa oscura, guantes NEGROS, trofeo, soga ===
@@ -4221,7 +4221,7 @@ function drawDialogueUI() {
     ctx.font = footSize + 'px "Press Start 2P", monospace';
     ctx.fillStyle = '#aaa';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona ENTER o toca para cerrar', cw / 2, y + h - Math.round(15 * s));
+    ctx.fillText('Toca para cerrar', cw / 2, y + h - Math.round(15 * s));
 
     // Guardar rect de cierre para tap
     _dialogCloseRect = { x: x, y: y, w: w, h: h };
@@ -4301,7 +4301,6 @@ function drawUI() {
         ctx.font = '10px "Press Start 2P", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.textAlign = 'left';
-        ctx.fillText('WASD / Flechas para moverse', 10, canvas.height - 10);
     }
 }
 
@@ -4621,7 +4620,7 @@ function drawRiddleUI() {
     ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona 1-4 o toca para responder', cw / 2, panelY + panelH - 6);
+    ctx.fillText('Toca para responder', cw / 2, panelY + panelH - 6);
 }
 
 function drawResultUI() {
@@ -4685,7 +4684,6 @@ function drawResultUI() {
     ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.textAlign = 'center';
-    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - Math.round(12 * s));
 }
 
 function drawFinaleUI() {
@@ -4739,7 +4737,6 @@ function drawFinaleUI() {
     const footFs = Math.max(7, Math.round(9 * s));
     ctx.font = footFs + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('Presiona ENTER para continuar', cw / 2, panelY + panelH - Math.round(15 * s));
 }
 
 function drawGameCompleteUI() {
@@ -4778,7 +4775,7 @@ function drawGameCompleteUI() {
 
         ctx.font = Math.max(7, Math.round(9 * s)) + 'px "Press Start 2P", monospace';
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
+        ctx.fillText('Toca para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
         return;
     }
 
@@ -4808,7 +4805,7 @@ function drawGameCompleteUI() {
 
     ctx.font = Math.max(7, Math.round(9 * s)) + 'px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('Presiona ENTER para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
+    ctx.fillText('Toca para volver al menú', cw / 2, ch / 2 + Math.round(120 * s));
 }
 
 function drawProgressHUD() {
