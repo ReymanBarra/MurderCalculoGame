@@ -501,9 +501,9 @@ function handleNpcInteraction(npc) {
     if (gameState.caseStage === 5 && RIDDLES.find(r => r.id === 5).solved) {
         showDialogue(
             'DON ROBERTO',
-            '¡Lo ha logrado, detective!\n\n' +
-            'Ahora tiene todas las pistas.\n' +
-            'Vaya a la CASA EMBRUJADA y resuelva el caso final.'
+            '¡Buen trabajo, detective!\n\n' +
+            'Aún queda un acertijo por resolver.\n' +
+            'Vaya a la CASA EMBRUJADA y continúe la investigación.'
         );
 
         enableRiddleById(2); // casa sospechosa
@@ -1575,8 +1575,9 @@ function selectRiddleOption(optionIndex) {
     if (gameState._riddleActivatedAt && (performance.now() - gameState._riddleActivatedAt) < 300) return;
     const riddle = gameState.activeRiddle;
 
-    // La respuesta correcta siempre es 'a' (index 0)
-    if (optionIndex === 0) {
+    // Buscar el índice de la respuesta correcta usando correctAnswer del riddle
+    const correctIndex = riddle.options.findIndex(opt => opt.label === (riddle.correctAnswer || 'a'));
+    if (optionIndex === correctIndex) {
         riddle.solved = true;
         gameState.riddlesSolved++;
         gameState.cluesFound.push(riddle.clueText);
@@ -4564,9 +4565,9 @@ function drawRiddleUI() {
     ctx.fillStyle = '#888';
     ctx.fillText(`📍 ${riddle.location} - Acertijo ${riddle.id}/${gameState.totalRiddles}`, cw / 2, panelY + (isLandscape ? 42 : Math.round(77 * s)));
 
-    // Pregunta
-    const qFs = isLandscape ? Math.max(7, Math.round(9 * s)) : Math.max(9, Math.round(13 * s));
-    ctx.font = qFs + 'px "Press Start 2P", monospace';
+    // Pregunta (fuente sans-serif para símbolos matemáticos)
+    const qFs = isLandscape ? Math.max(10, Math.round(13 * s)) : Math.max(14, Math.round(18 * s));
+    ctx.font = 'bold ' + qFs + 'px Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
     const qY = panelY + (isLandscape ? 58 : Math.round(105 * s));
     const qLineH = isLandscape ? Math.max(12, Math.round(14 * s)) : Math.max(16, Math.round(22 * s));
@@ -4608,10 +4609,10 @@ function drawRiddleUI() {
         ctx.textAlign = 'left';
         ctx.fillText(`${opt.label})`, panelX + Math.round(20 * s), oy + Math.round(optionH / 2 + 3));
 
-        // Texto de la opción
-        const optFs = isLandscape ? Math.max(7, Math.round(8 * s)) : Math.max(8, Math.round(11 * s));
+        // Texto de la opción (fuente sans-serif para símbolos matemáticos)
+        const optFs = isLandscape ? Math.max(10, Math.round(12 * s)) : Math.max(13, Math.round(16 * s));
         ctx.fillStyle = '#ffffff';
-        ctx.font = optFs + 'px "Press Start 2P", monospace';
+        ctx.font = 'bold ' + optFs + 'px Arial, sans-serif';
         ctx.fillText(opt.text, panelX + Math.round(60 * s), oy + Math.round(optionH / 2 + 3));
     }
 

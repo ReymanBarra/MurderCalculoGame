@@ -514,13 +514,14 @@ const RIDDLES = [
         interior: 'comisaria',
         x: 4, y: 3,
         location: 'COMISARÍA',
-        question: '¿Cuál es la derivada de f(x) = 3x² + 2x?',
+        question: 'Resuelva la siguiente integral aplicando la regla de la potencia: ∫ x²/³ dx',
         options: [
-            { label: 'a', text: "f'(x) = 6x + 2" },
-            { label: 'b', text: "f'(x) = 3x + 2" },
-            { label: 'c', text: "f'(x) = 6x² + 2" },
-            { label: 'd', text: "f'(x) = 6x" }
+            { label: 'a', text: '(5/3)x³/⁵ + C' },
+            { label: 'b', text: 'x²/³ + C' },
+            { label: 'c', text: '(3/2)x²/³ + C' },
+            { label: 'd', text: '(3/5)x⁵/³ + C' }
         ],
+        correctAnswer: 'd',
         solved: false,
         clueText: '🔍 Pista 3: Encuentras una nota clara: “La persona que me atacó usaba guantes negros".'
     },
@@ -529,13 +530,14 @@ const RIDDLES = [
         interior: 'casa',
         x: 8, y: 4,
         location: 'CASA EMBRUJADA',
-        question: '¿Cuál es el valor de la integral ∫ 2x dx?',
+        question: 'Para resolver una integral por partes necesitas elegir u y dv. Según la regla ILATE, ¿cuál opción describe mejor cómo se elige u?',
         options: [
-            { label: 'a', text: 'x² + C' },
-            { label: 'b', text: '2x² + C' },
-            { label: 'c', text: 'x + C' },
-            { label: 'd', text: '2x + C' }
+            { label: 'a', text: 'u siempre debe ser la función trigonométrica (sen, cos, tan), sin importar el integrando.' },
+            { label: 'b', text: 'u se elige como la primera función que aparezca en el orden ILATE dentro del integrando.' },
+            { label: 'c', text: 'u se elige como la función que sea más grande o tenga exponente más alto.' },
+            { label: 'd', text: 'u y dv se eligen al azar porque siempre se llega al mismo resultado.' }
         ],
+        correctAnswer: 'b',
         solved: false,
         clueText: '🔍 Pista 6: La víctima dejó escrito: “Solo alguien que trabaja de noche cerca del hospital podría hacerlo".'
     },
@@ -544,13 +546,14 @@ const RIDDLES = [
         interior: 'biblioteca',   // 👈 IMPORTANTE (id del interiorMaps)
         x: 6, y: 4,               // 👈 coordenadas DENTRO del mapa interior (ajustables)
         location: 'BIBLIOTECA',
-        question: '¿Cuál es el límite de (x² - 1)/(x - 1) cuando x → 1?',
+        question: 'Resuelva la siguiente integral: ∫ ⁴√x³ dx',
         options: [
-            { label: 'a', text: '2' },
-            { label: 'b', text: '0' },
-            { label: 'c', text: '1' },
-            { label: 'd', text: 'No existe' }
+            { label: 'a', text: '(4⁴√x⁷)/7 + C' },
+            { label: 'b', text: '(7⁴√x⁴)/4 + C' },
+            { label: 'c', text: '(4⁴√x³)/3 + C' },
+            { label: 'd', text: '⁴√x⁷ + C' }
         ],
+        correctAnswer: 'a',
         solved: false,
         clueText: '🔍 Pista 1: La víctima escribió: “No fue un cuchillo, fue algo pesado".'
     },
@@ -559,13 +562,14 @@ const RIDDLES = [
         interior: 'apartamentos',
         x: 4, y: 3,
         location: 'APARTAMENTOS',
-        question: '¿Cuál es la derivada de f(x) = sen(x)?',
+        question: 'Sea ∫ (7cos x)/√(sin x) dx. Si u = sin x, ¿cuál integral es equivalente?',
         options: [
-            { label: 'a', text: "f'(x) = cos(x)" },
-            { label: 'b', text: "f'(x) = -cos(x)" },
-            { label: 'c', text: "f'(x) = -sen(x)" },
-            { label: 'd', text: "f'(x) = tan(x)" }
+            { label: 'a', text: '∫ u/√(u+7) du' },
+            { label: 'b', text: '∫ 7/√u du' },
+            { label: 'c', text: '∫ u/√(u+7) du' },
+            { label: 'd', text: '∫ 7/(u+2) du' }
         ],
+        correctAnswer: 'b',
         solved: false,
         clueText: '🔍 Pista 4: Encuentras un recibo real: “Compra de soga – ferretería – 10:45 p. m.".'
     },
@@ -574,13 +578,14 @@ const RIDDLES = [
         interior: 'restaurante',
         x: 4, y: 3,
         location: 'RESTAURANTE',
-        question: '¿Cuál es el valor de ∫₀² 3x² dx?',
+        question: 'Una sustitución conveniente para calcular ∫ 3x√(x²+1) dx corresponde a:',
         options: [
-            { label: 'a', text: '8' },
-            { label: 'b', text: '12' },
-            { label: 'c', text: '6' },
-            { label: 'd', text: '4' }
+            { label: 'a', text: 'u = x²' },
+            { label: 'b', text: 'u = x + 1' },
+            { label: 'c', text: 'u = x² + 1' },
+            { label: 'd', text: 'u = x³ + 2' }
         ],
+        correctAnswer: 'c',
         solved: false,
         clueText: '🩸 Pista 5: Nota corta: “Carlos es el único que sabía todo”.'
 
@@ -590,13 +595,14 @@ const RIDDLES = [
         interior: 'hospital',
         x: 4, y: 3,
         location: 'HOSPITAL',
-        question: '¿Cuál es la segunda derivada de f(x) = x³ + 2x?',
+        question: 'Utilizando identidades e integrales trigonométricas, resuelva: ∫(3 + 3tan²x) dx',
         options: [
-            { label: 'a', text: "f''(x) = 6x" },
-            { label: 'b', text: "f''(x) = 3x² + 2" },
-            { label: 'c', text: "f''(x) = 6x + 2" },
-            { label: 'd', text: "f''(x) = 6" }
+            { label: 'a', text: '3 sec x + C' },
+            { label: 'b', text: '3 sec²x + C' },
+            { label: 'c', text: '3 tan x + C' },
+            { label: 'd', text: 'tan²x + C' }
         ],
+        correctAnswer: 'c',
         solved: false,
         clueText: '🔍 Pista 2: La nota final dice: “Carlos Méndez me citó aquí… tengo miedo".'
     }
@@ -607,13 +613,14 @@ const RIDDLES = [
         x: 9,
         y: 7,
         location: 'APARTAMENTOS (PISTA FINAL)',
-        question: 'Encuentras una ecuación escrita: 2x + 5 = 17. ¿Cuál es el valor de x?',
+        question: 'Sea ∫ x dx/√(x²+4). Si u = x²+4, ¿cuál integral es equivalente?',
         options: [
-            { label: 'a', text: 'x = 6' },
-            { label: 'b', text: 'x = 7' },
-            { label: 'c', text: 'x = 8' },
-            { label: 'd', text: 'x = 5' }
+            { label: 'a', text: '∫ √u + 2 du' },
+            { label: 'b', text: '∫ √u + 3 du' },
+            { label: 'c', text: '∫ √u + 1 du' },
+            { label: 'd', text: '(1/2) ∫ √u du' }
         ],
+        correctAnswer: 'd',
         solved: false,
         clueText: '🔍 PISTA FINAL: ¡Encuentras guantes NEGROS escondidos! Si Carlos usa guantes negros, Pedro usa blancos y Luis no tiene guantes. Ya sé quien es el asesino!'
     }
